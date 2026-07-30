@@ -1,0 +1,153 @@
+"""
+Top-level game orchestrator.
+
+``Game`` ties together the board, rules, move generator, and evaluator
+into a playable console loop.  It also exposes a programmatic API so
+that the GUI and the hybrid engine can drive moves without stdin.
+"""
+
+from __future__ import annotations
+
+from engine.board import Board
+from engine.constants import Color
+from engine.evaluator import Evaluator
+from engine.move import Move
+from engine.move_generator import MoveGenerator
+from engine.pieces import create_initial_pieces
+from engine.state import GameState
+
+
+class Game:
+    """Interactive pawn-chess game.
+
+    Attributes:
+        state: The live ``GameState``.
+    """
+
+    def __init__(self) -> None:
+        """Initialise a new game with the default starting position."""
+        self.state: GameState = self._create_initial_state()
+
+    # ------------------------------------------------------------------
+    # Setup
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _create_initial_state() -> GameState:
+        """Build the opening ``GameState``.
+
+        Returns:
+            A ``GameState`` with the standard 3×3 starting layout.
+        """
+        board = Board()
+        for position, piece in create_initial_pieces().items():
+            board.place_piece(position, piece)
+        return GameState(board=board, current_turn=Color.WHITE)
+
+    def reset(self) -> None:
+        """Restart the game from the initial position."""
+        self.state = self._create_initial_state()
+
+    # ------------------------------------------------------------------
+    # Programmatic API (used by GUI & AI)
+    # ------------------------------------------------------------------
+
+    def get_legal_moves(self) -> list[Move]:
+        """Return all legal moves for the current player.
+
+        Returns:
+            List of ``Move`` objects.
+        """
+        return MoveGenerator.generate_legal_moves(self.state)
+
+    def get_moves_for_position(self, position: "Position") -> list[Move]:
+        """Return legal moves originating from *position*.
+
+        Args:
+            position: The source square.
+
+        Returns:
+            List of legal ``Move`` objects.
+        """
+        return MoveGenerator.generate_moves_for_position(self.state, position)
+
+    def make_move(self, move: Move) -> None:
+        """Validate and apply *move* to the live state.
+
+        Args:
+            move: The move to execute.
+
+        Raises:
+            ValueError: If the move is not legal.
+        """
+        from engine.rules import Rules
+
+        if not Rules.is_valid_move(self.state, move):
+            raise ValueError(f"Illegal move: {move}")
+        self.state = self.state.apply_move(move)
+
+    def is_over(self) -> bool:
+        """Check whether the game has ended.
+
+        Returns:
+            ``True`` if a player has won or the position is a draw.
+        """
+        return (
+            Evaluator.winner(self.state) is not None
+            or Evaluator.is_draw(self.state)
+        )
+
+    def winner(self) -> Color | None:
+        """Return the winning colour, or ``None``.
+
+        Returns:
+            ``Color.WHITE``, ``Color.BLACK``, or ``None``.
+        """
+        return Evaluator.winner(self.state)
+
+    # ------------------------------------------------------------------
+    # Console game loop
+    # ------------------------------------------------------------------
+
+    def play(self) -> None:
+        """Run an interactive console game until completion."""
+        print("=" * 40)
+        print("  QUANTUM CHESS ENGINE — 3×3 Pawn Chess")
+        print("=" * 40)
+
+        while True:
+            print()
+            print(self.state)
+            print()
+
+            # Check terminal conditions.
+            game_winner = self.winner()
+            if game_winner is not None:
+                print(f"  >>> {game_winner} WINS! <<<")
+                break
+
+            if Evaluator.is_draw(self.state):
+                print("  >>> DRAW — no legal moves <<<")
+                break
+
+            # Generate and display legal moves.
+            moves = self.get_legal_moves()
+            print(f"  {self.state.current_turn}'s turn — legal moves:")
+            for idx, mv in enumerate(moves):
+                print(f"    [{idx}] {mv}")
+
+            # Player input.
+            while True:
+                try:
+                    raw = input("  Select move number: ").strip()
+                    choice = int(raw)
+                    if 0 <= choice < len(moves):
+                        break
+                    print(f"  Enter a number between 0 and {len(moves) - 1}.")
+                except (ValueError, EOFError):
+                    print("  Invalid input. Enter a move number.")
+
+            selected_move = moves[choice]
+            self.make_move(selected_move)
+
+        print("\nGame over. Thanks for playing!")
