@@ -1,0 +1,6 @@
+Design_of_Quantum_Circuits_to_Play_Chess_in_a_Quantum_Computer.pdf
+Grover's_algorithm.pdf
+__pycache__/
+.pytest_cache/
+..gitignore.swp
+
