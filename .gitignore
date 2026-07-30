@@ -3,4 +3,4 @@ Grover's_algorithm.pdf
 __pycache__/
 .pytest_cache/
 ..gitignore.swp
-
+**/__pycache__/
