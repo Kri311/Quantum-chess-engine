@@ -40,21 +40,20 @@ class Evaluator:
         white_alive = False
         black_alive = False
 
+        white_king_alive = False
+        black_king_alive = False
+
         for pos, piece in board.pieces_by_color(Color.WHITE):
-            white_alive = True
-            # In 3x3 pawn chess, reaching the end was a win. For 8x8, we disable this
-            # or limit it to pawns if desired. Let's limit it to pawns.
-            if piece.piece_type == PieceType.PAWN and pos.row == 0:
-                return Color.WHITE
+            if piece.piece_type == PieceType.KING:
+                white_king_alive = True
 
         for pos, piece in board.pieces_by_color(Color.BLACK):
-            black_alive = True
-            if piece.piece_type == PieceType.PAWN and pos.row == board.size - 1:
-                return Color.BLACK
+            if piece.piece_type == PieceType.KING:
+                black_king_alive = True
 
-        if not white_alive:
+        if not white_king_alive:
             return Color.BLACK
-        if not black_alive:
+        if not black_king_alive:
             return Color.WHITE
 
         return None
@@ -101,8 +100,17 @@ class Evaluator:
         score: float = 0.0
         max_distance: float = float(board.size - 1)
 
+        def piece_value(pt: PieceType) -> float:
+            if pt == PieceType.PAWN: return 1.0
+            if pt == PieceType.KNIGHT: return 3.0
+            if pt == PieceType.BISHOP: return 3.0
+            if pt == PieceType.ROOK: return 5.0
+            if pt == PieceType.QUEEN: return 9.0
+            if pt == PieceType.KING: return 100.0
+            return 1.0
+
         for pos, piece in board.pieces_by_color(Color.WHITE):
-            val = 1.0 if piece.piece_type == PieceType.PAWN else 3.0
+            val = piece_value(piece.piece_type)
             score += val  # material
             
             # Advancement bonus for pawns
@@ -111,18 +119,18 @@ class Evaluator:
                 score += advancement * 0.5
                 
             # Center control
-            center_dist = abs(pos.col - board.size / 2) + abs(pos.row - board.size / 2)
+            center_dist = abs(pos.col - board.size / 2.0) + abs(pos.row - board.size / 2.0)
             score += (board.size - center_dist) * 0.1
 
         for pos, piece in board.pieces_by_color(Color.BLACK):
-            val = 1.0 if piece.piece_type == PieceType.PAWN else 3.0
+            val = piece_value(piece.piece_type)
             score -= val  # material
             
             if piece.piece_type == PieceType.PAWN:
                 advancement = pos.row / max_distance
                 score -= advancement * 0.5
                 
-            center_dist = abs(pos.col - board.size / 2) + abs(pos.row - board.size / 2)
+            center_dist = abs(pos.col - board.size / 2.0) + abs(pos.row - board.size / 2.0)
             score -= (board.size - center_dist) * 0.1
 
         # Terminal bonuses.

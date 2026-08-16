@@ -234,7 +234,13 @@ class ChessGUI:
         animating = None
         if self._animator.is_animating:
             px, py = self._animator.current_pixel
-            animating = (self._animator.piece_color, px, py)
+            piece_type = None
+            if hasattr(self, "_pending_move") and self._pending_move:
+                piece = self.game.state.board.get_piece(self._pending_move.start)
+                if piece:
+                    piece_type = piece.piece_type
+            if piece_type is not None:
+                animating = (self._animator.piece_color, px, py, piece_type)
 
         self._renderer.draw(
             state=self.game.state,

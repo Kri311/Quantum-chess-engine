@@ -208,32 +208,42 @@ class BoardRenderer:
         for pos, piece in state.board.all_pieces.items():
             # Skip the piece that is currently being animated.
             if animating_piece is not None:
-                anim_color, _, _ = animating_piece
+                anim_color, _, _, _ = animating_piece
                 # We skip drawing by comparing the position below.
 
             cx, cy = self.position_to_pixel_center(pos)
-            self._draw_piece_circle(cx, cy, piece.color)
+            self._draw_piece_circle(cx, cy, piece.color, piece.piece_type)
 
-    def _draw_piece_circle(self, cx: int, cy: int, color: Color) -> None:
+    def _draw_piece_circle(self, cx: int, cy: int, color: Color, piece_type: PieceType) -> None:
         """Draw a single piece as a filled circle with a letter label.
 
         Args:
             cx: Centre X pixel.
             cy: Centre Y pixel.
             color: Piece colour.
+            piece_type: Piece type.
         """
         radius = self.cell_size // 3
+
+        # Map PieceType to character
+        char_map = {
+            "PAWN": "P",
+            "KNIGHT": "N",
+            "BISHOP": "B",
+            "ROOK": "R",
+            "QUEEN": "Q",
+            "KING": "K"
+        }
+        label = char_map.get(piece_type.name, "?")
 
         if color is Color.WHITE:
             fill = config.COLOR_WHITE_PIECE
             outline = (80, 80, 80)
             text_color = (0, 0, 0)
-            label = "W"
         else:
             fill = config.COLOR_BLACK_PIECE
             outline = (180, 180, 180)
             text_color = (255, 255, 255)
-            label = "B"
 
         # Shadow.
         pygame.draw.circle(
@@ -250,7 +260,7 @@ class BoardRenderer:
             self.surface.blit(text_surf, text_rect)
 
     def _draw_animated_piece(
-        self, color: Color, px: float, py: float
+        self, color: Color, px: float, py: float, piece_type: PieceType
     ) -> None:
         """Draw the piece that is currently being animated.
 
@@ -258,8 +268,9 @@ class BoardRenderer:
             color: Piece colour.
             px: Current pixel X.
             py: Current pixel Y.
+            piece_type: The type of piece being animated.
         """
-        self._draw_piece_circle(int(px), int(py), color)
+        self._draw_piece_circle(int(px), int(py), color, piece_type)
 
     def _draw_status_bar(self, state: GameState, fps: float) -> None:
         """Draw the bottom status bar with turn info and FPS."""

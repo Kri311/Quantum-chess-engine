@@ -42,18 +42,20 @@ def create_initial_pieces(
         pieces[Position(row=size - 1, col=1)] = white_pawn
         pieces[Position(row=0, col=1)] = black_pawn
     else:
-        white_knight = Piece(color=Color.WHITE, piece_type=PieceType.KNIGHT)
-        black_knight = Piece(color=Color.BLACK, piece_type=PieceType.KNIGHT)
-        
         # Generic layout: full row of pawns for each side.
         for col in range(size):
             pieces[Position(row=size - 2, col=col)] = white_pawn
             pieces[Position(row=1, col=col)] = black_pawn
             
-        # Knights
-        pieces[Position(row=size - 1, col=1)] = white_knight
-        pieces[Position(row=size - 1, col=size - 2)] = white_knight
-        pieces[Position(row=0, col=1)] = black_knight
-        pieces[Position(row=0, col=size - 2)] = black_knight
+        # Place remaining pieces
+        piece_order = [
+            PieceType.ROOK, PieceType.KNIGHT, PieceType.BISHOP, PieceType.QUEEN,
+            PieceType.KING, PieceType.BISHOP, PieceType.KNIGHT, PieceType.ROOK
+        ]
+        
+        for col, p_type in enumerate(piece_order):
+            if col < size:
+                pieces[Position(row=size - 1, col=col)] = Piece(Color.WHITE, p_type)
+                pieces[Position(row=0, col=col)] = Piece(Color.BLACK, p_type)
 
     return pieces

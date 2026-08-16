@@ -94,8 +94,15 @@ class MoveGenerator:
             return MoveGenerator._pawn_moves(state, position, piece.color)
         if piece.piece_type is PieceType.KNIGHT:
             return MoveGenerator._knight_moves(state, position, piece.color)
+        if piece.piece_type is PieceType.BISHOP:
+            return MoveGenerator._sliding_moves(state, position, piece.color, [(1, 1), (1, -1), (-1, 1), (-1, -1)])
+        if piece.piece_type is PieceType.ROOK:
+            return MoveGenerator._sliding_moves(state, position, piece.color, [(1, 0), (-1, 0), (0, 1), (0, -1)])
+        if piece.piece_type is PieceType.QUEEN:
+            return MoveGenerator._sliding_moves(state, position, piece.color, [(1, 1), (1, -1), (-1, 1), (-1, -1), (1, 0), (-1, 0), (0, 1), (0, -1)])
+        if piece.piece_type is PieceType.KING:
+            return MoveGenerator._king_moves(state, position, piece.color)
 
-        # Future piece types would be dispatched here.
         return []
 
     @staticmethod
@@ -168,7 +175,58 @@ class MoveGenerator:
                     continue  # Can't capture own piece
                     
                 move = Move(start=position, end=target_pos, capture=capture)
-                if Rules.is_valid_move(state, move):
-                    candidates.append(move)
+                candidates.append(move)
+                    
+        return candidates
+
+    @staticmethod
+    def _sliding_moves(
+        state: GameState,
+        position: Position,
+        color: Color,
+        directions: list[tuple[int, int]]
+    ) -> list[Move]:
+        board = state.board
+        candidates: list[Move] = []
+        
+        for d_row, d_col in directions:
+            current_row, current_col = position.row + d_row, position.col + d_col
+            while 0 <= current_row < board.size and 0 <= current_col < board.size:
+                target_pos = Position(current_row, current_col)
+                target_piece = board.get_piece(target_pos)
+                
+                if target_piece is None:
+                    candidates.append(Move(start=position, end=target_pos, capture=False))
+                elif target_piece.color is not color:
+                    candidates.append(Move(start=position, end=target_pos, capture=True))
+                    break
+                else:
+                    break
+                    
+                current_row += d_row
+                current_col += d_col
+                
+        return candidates
+
+    @staticmethod
+    def _king_moves(
+        state: GameState,
+        position: Position,
+        color: Color,
+    ) -> list[Move]:
+        board = state.board
+        candidates: list[Move] = []
+        
+        directions = [(1, 1), (1, -1), (-1, 1), (-1, -1), (1, 0), (-1, 0), (0, 1), (0, -1)]
+        for d_row, d_col in directions:
+            target_row, target_col = position.row + d_row, position.col + d_col
+            if 0 <= target_row < board.size and 0 <= target_col < board.size:
+                target_pos = Position(target_row, target_col)
+                target_piece = board.get_piece(target_pos)
+                
+                if target_piece is None:
+                    candidates.append(Move(start=position, end=target_pos, capture=False))
+                elif target_piece.color is not color:
+                    candidates.append(Move(start=position, end=target_pos, capture=True))
                     
         return candidates
