@@ -44,8 +44,10 @@ class BoardRenderer:
         self.cell_size: int = 0
         self.board_origin: tuple[int, int] = (0, 0)
         self._font: pygame.font.Font | None = None
-        self._small_font: pygame.font.Font | None = None
-        self._title_font: pygame.font.Font | None = None
+        self._ui_font: pygame.font.Font | None = None
+        self._ui_small_font: pygame.font.Font | None = None
+        self._banner_font: pygame.font.Font | None = None
+        self._banner_small_font: pygame.font.Font | None = None
         self._recalculate_layout()
 
     # ------------------------------------------------------------------
@@ -65,8 +67,12 @@ class BoardRenderer:
         )
         font_size = max(self.cell_size // 2, 16)
         self._font = pygame.font.SysFont("dejavusans", font_size)
-        self._small_font = pygame.font.SysFont("dejavusans", font_size // 2)
-        self._title_font = pygame.font.SysFont("dejavusans", font_size // 3)
+        
+        # Fixed size fonts for UI since the status bar height and banner offsets are fixed
+        self._ui_font = pygame.font.SysFont("dejavusans", 24)
+        self._ui_small_font = pygame.font.SysFont("dejavusans", 16)
+        self._banner_font = pygame.font.SysFont("dejavusans", 48)
+        self._banner_small_font = pygame.font.SysFont("dejavusans", 24)
 
     def on_resize(self, surface: pygame.Surface) -> None:
         """Handle a window resize event.
@@ -276,29 +282,29 @@ class BoardRenderer:
             width=2,
         )
 
-        if self._font is not None:
+        if self._ui_font is not None:
             # Turn indicator.
             turn_text = f"Turn: {state.current_turn}"
-            turn_surf = self._font.render(turn_text, True, config.COLOR_TEXT)
+            turn_surf = self._ui_font.render(turn_text, True, config.COLOR_TEXT)
             self.surface.blit(turn_surf, (20, bar_y + 10))
 
             # Move count.
             moves_text = f"Moves: {len(state.move_history)}"
-            moves_surf = self._font.render(moves_text, True, config.COLOR_TEXT)
+            moves_surf = self._ui_font.render(moves_text, True, config.COLOR_TEXT)
             self.surface.blit(moves_surf, (20, bar_y + 45))
 
-        if self._small_font is not None:
+        if self._ui_small_font is not None:
             # FPS.
             fps_text = f"FPS: {fps:.0f}"
-            fps_surf = self._small_font.render(fps_text, True, (120, 120, 120))
+            fps_surf = self._ui_small_font.render(fps_text, True, (120, 120, 120))
             fps_rect = fps_surf.get_rect(topright=(w - 10, bar_y + 10))
             self.surface.blit(fps_surf, fps_rect)
 
             # Restart hint.
-            hint_surf = self._small_font.render(
+            hint_surf = self._ui_small_font.render(
                 "R: Restart | ESC: Quit", True, (100, 100, 100)
             )
-            hint_rect = hint_surf.get_rect(topright=(w - 10, bar_y + 30))
+            hint_rect = hint_surf.get_rect(topright=(w - 10, bar_y + 35))
             self.surface.blit(hint_surf, hint_rect)
 
     def draw_winner_banner(self, winner: Color) -> None:
@@ -312,15 +318,15 @@ class BoardRenderer:
         overlay.fill((0, 0, 0, 160))
         self.surface.blit(overlay, (0, 0))
 
-        if self._font is not None:
+        if self._banner_font is not None:
             text = f"{winner} WINS!"
-            text_surf = self._font.render(text, True, (255, 215, 0))
-            text_rect = text_surf.get_rect(center=(w // 2, h // 2 - 20))
+            text_surf = self._banner_font.render(text, True, (255, 215, 0))
+            text_rect = text_surf.get_rect(center=(w // 2, h // 2 - 30))
             self.surface.blit(text_surf, text_rect)
 
-        if self._small_font is not None:
+        if self._banner_small_font is not None:
             sub = "Press R to restart"
-            sub_surf = self._small_font.render(sub, True, (200, 200, 200))
+            sub_surf = self._banner_small_font.render(sub, True, (200, 200, 200))
             sub_rect = sub_surf.get_rect(center=(w // 2, h // 2 + 30))
             self.surface.blit(sub_surf, sub_rect)
 
@@ -331,13 +337,13 @@ class BoardRenderer:
         overlay.fill((0, 0, 0, 160))
         self.surface.blit(overlay, (0, 0))
 
-        if self._font is not None:
-            text_surf = self._font.render("DRAW", True, (180, 180, 180))
-            text_rect = text_surf.get_rect(center=(w // 2, h // 2 - 20))
+        if self._banner_font is not None:
+            text_surf = self._banner_font.render("DRAW", True, (180, 180, 180))
+            text_rect = text_surf.get_rect(center=(w // 2, h // 2 - 30))
             self.surface.blit(text_surf, text_rect)
 
-        if self._small_font is not None:
-            sub_surf = self._small_font.render(
+        if self._banner_small_font is not None:
+            sub_surf = self._banner_small_font.render(
                 "Press R to restart", True, (200, 200, 200)
             )
             sub_rect = sub_surf.get_rect(center=(w // 2, h // 2 + 30))
