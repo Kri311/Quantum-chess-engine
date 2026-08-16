@@ -15,7 +15,6 @@ from engine.constants import Color, PieceType
 from engine.move import Move
 from engine.piece import Piece
 from engine.position import Position
-from engine.rules import Rules
 from engine.state import GameState
 
 
@@ -115,6 +114,8 @@ class MoveGenerator:
 
         A pawn may:
         * Move one square forward if the target is empty.
+        * Move two squares forward from its starting rank if both
+          squares ahead are empty.
         * Capture diagonally if the target holds an enemy piece.
 
         Args:
@@ -126,24 +127,33 @@ class MoveGenerator:
             List of legal ``Move`` objects.
         """
         board: Board = state.board
-        forward_row = position.row + (-1 if color is Color.WHITE else 1)
+        forward_dir = -1 if color is Color.WHITE else 1
+        forward_row = position.row + forward_dir
         candidates: list[Move] = []
 
-        # Forward move.
+        # Single forward move.
         if 0 <= forward_row < board.size:
             forward_pos = Position(forward_row, position.col)
-            forward_move = Move(start=position, end=forward_pos, capture=False)
-            if Rules.is_valid_move(state, forward_move):
-                candidates.append(forward_move)
+            if board.get_piece(forward_pos) is None:
+                candidates.append(Move(start=position, end=forward_pos, capture=False))
+
+                # Two-square opening move from starting rank.
+                start_rank = board.size - 2 if color is Color.WHITE else 1
+                if position.row == start_rank:
+                    double_row = position.row + 2 * forward_dir
+                    if 0 <= double_row < board.size:
+                        double_pos = Position(double_row, position.col)
+                        if board.get_piece(double_pos) is None:
+                            candidates.append(Move(start=position, end=double_pos, capture=False))
 
         # Diagonal captures.
         for col_offset in (-1, 1):
             new_col = position.col + col_offset
             if 0 <= forward_row < board.size and 0 <= new_col < board.size:
                 diag_pos = Position(forward_row, new_col)
-                diag_move = Move(start=position, end=diag_pos, capture=True)
-                if Rules.is_valid_move(state, diag_move):
-                    candidates.append(diag_move)
+                target_piece = board.get_piece(diag_pos)
+                if target_piece is not None and target_piece.color is not color:
+                    candidates.append(Move(start=position, end=diag_pos, capture=True))
 
         return candidates
 

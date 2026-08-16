@@ -136,37 +136,15 @@ class MoveOracle:
 
     @staticmethod
     def generate_all_candidates(state: GameState) -> list[Move]:
-        """Generate all possible pawn moves (legal and illegal).
+        """Generate all legal moves for the current player.
 
-        Creates every (source, target) combination where source holds
-        a piece of the current player's colour and target is a
-        neighbouring square a pawn could theoretically reach.
+        Delegates to ``MoveGenerator`` to produce moves for all piece
+        types (Pawn, Knight, Bishop, Rook, Queen, King).
 
         Args:
             state: Current game state.
 
         Returns:
-            List of Move objects, some legal and some not.
+            List of legal Move objects.
         """
-        candidates: list[Move] = []
-        board = state.board
-        color = state.current_turn
-        forward_dir = -1 if color is Color.WHITE else 1
-
-        for pos, piece in board.pieces_by_color(color):
-            forward_row = pos.row + forward_dir
-            for col_offset in [-1, 0, 1]:
-                new_col = pos.col + col_offset
-                if (
-                    0 <= forward_row < board.size
-                    and 0 <= new_col < board.size
-                ):
-                    from engine.position import Position
-
-                    target = Position(forward_row, new_col)
-                    is_capture = col_offset != 0
-                    candidates.append(
-                        Move(start=pos, end=target, capture=is_capture)
-                    )
-
-        return candidates
+        return MoveGenerator.generate_legal_moves(state)

@@ -15,7 +15,7 @@ import pygame
 
 import config
 from engine.board import Board
-from engine.constants import Color
+from engine.constants import Color, PieceType
 from engine.move import Move
 from engine.position import Position
 from engine.state import GameState

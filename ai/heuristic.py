@@ -69,26 +69,48 @@ class HeuristicEvaluator:
         Returns:
             Floating-point move score.
         """
+        from engine.constants import PieceType
+
         score = 0.0
-
-        # Captures are generally good.
-        if move.capture:
-            score += 10.0
-
-        # Advancing toward promotion is good for pawns.
-        piece = state.board.get_piece(move.start)
         board_size = state.board.size
-        
-        if piece and piece.piece_type.name == "PAWN":
-            if state.current_turn is Color.WHITE:
-                advancement = (board_size - 1 - move.end.row)
-                score += advancement * 2.0
-            else:
-                score += move.end.row * 2.0
 
-        # Centre control preference for all pieces (highly important for knights)
+        # Material value lookup.
+        material = {
+            PieceType.PAWN: 1.0,
+            PieceType.KNIGHT: 3.0,
+            PieceType.BISHOP: 3.0,
+            PieceType.ROOK: 5.0,
+            PieceType.QUEEN: 9.0,
+            PieceType.KING: 100.0,
+        }
+
+        # Captures scored by target piece value (MVV-LVA principle).
+        if move.capture:
+            target = state.board.get_piece(move.end)
+            if target is not None:
+                score += material.get(target.piece_type, 1.0) * 10.0
+            else:
+                score += 10.0
+
+        # Piece-specific positional bonuses.
+        piece = state.board.get_piece(move.start)
+        if piece is not None:
+            # Pawn advancement toward promotion.
+            if piece.piece_type is PieceType.PAWN:
+                if state.current_turn is Color.WHITE:
+                    score += (board_size - 1 - move.end.row) * 2.0
+                else:
+                    score += move.end.row * 2.0
+
+            # Knights and Bishops strongly prefer the centre.
+            if piece.piece_type in (PieceType.KNIGHT, PieceType.BISHOP):
+                centre = board_size / 2.0
+                distance_to_centre = abs(move.end.col - centre) + abs(move.end.row - centre)
+                score += ((board_size * 2) - distance_to_centre) * 0.8
+
+        # General centre control preference for all pieces.
         centre = board_size / 2.0
         distance_to_centre = abs(move.end.col - centre) + abs(move.end.row - centre)
-        score += ((board_size * 2) - distance_to_centre) * 0.5
+        score += ((board_size * 2) - distance_to_centre) * 0.3
 
         return score
