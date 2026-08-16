@@ -98,12 +98,14 @@ class PureQuantumCircuitBuilder:
     ) -> None:
         """Extract the status of a square identified by coord_qubits."""
         board = state.board
+        sparse = (len(status_output) == 6)
+        
         for row in range(board.size):
             for col in range(board.size):
                 pos = Position(row, col)
                 piece = board.get_piece(pos)
-                status = BoardEncoder.encode_status(piece)
-                if status == "000":
+                status = BoardEncoder.encode_status(piece, sparse=sparse)
+                if all(b == "0" for b in status):
                     continue
 
                 coord_bits = BoardEncoder.encode_position(pos, board.size)
@@ -167,18 +169,16 @@ class PureQuantumCircuitBuilder:
         ancilla: list,
     ) -> None:
         """Execute status swap/capture transformation."""
-        # For 8x8, this operator requires swapping/capturing 3-qubit statuses 
-        # conditionally based on the 4-qubit direction register.
-        # Below is the extended shell of the 3x3 operator logic adapted.
-        for i in range(3):
+        status_len = len(src_status)
+        for i in range(status_len):
             circuit.x(dst_status[i])
             
         controls = list(direction) + list(dst_status)
 
-        for i in range(3):
+        for i in range(status_len):
             circuit.mcx(controls + [src_status[i]], ancilla[0])
             circuit.cx(ancilla[0], dst_status[i])
             circuit.mcx(controls + [src_status[i]], ancilla[0])
 
-        for i in range(3):
+        for i in range(status_len):
             circuit.x(dst_status[i])

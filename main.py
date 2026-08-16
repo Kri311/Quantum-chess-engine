@@ -141,7 +141,7 @@ def main() -> None:
         print("========================================================")
         print("1. Play 8x8 Hybrid Chess (You vs Quantum GPU AI)")
         print("2. Play 3x3 Pure Chess   (Academic Prototype metrics)")
-        print("3. Generate 27-Qubit 8x8 Architecture Diagram")
+        print("3. Generate 33-Qubit 8x8 Architecture Diagram")
         print("4. Generate 23-Qubit 3x3 Architecture Diagram")
         print("5. Exit")
         print("========================================================")

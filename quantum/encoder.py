@@ -99,42 +99,32 @@ class BoardEncoder:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def encode_status(piece: Piece | None) -> str:
-        """Encode a square's occupancy as a 3-bit status string.
-
-        Encoding: [color_bit][type_bit_1][type_bit_0]
-            Empty       → 000
-            Black Pawn  → 001, White Pawn  → 101
-            Black Knight→ 010, White Knight→ 110
-            Black Bishop→ 011, White Bishop→ 111
-            Black Rook  → 100 (overloaded), White Rook→ handled via extended
-            Black Queen → reserved, White Queen → reserved
-            Black King  → reserved, White King  → reserved
-
-        For the 3-qubit register, we encode:
-            PAWN   = 001
-            KNIGHT = 010
-            BISHOP = 011
-            ROOK   = 100
-            QUEEN  = 101
-            KING   = 110
-
-        The MSB is the color bit (0=Black, 1=White).
-
-        Note: With 3 qubits we can encode 2 colors × 6 types = 12 values
-        but only have 8 states. We use the 2 type bits for piece type
-        and the color bit separately.
+    def encode_status(piece: Piece | None, sparse: bool = False) -> str:
+        """Encode a square's occupancy as a 3-bit or 6-bit status string.
 
         Args:
             piece: The piece on the square, or ``None`` for empty.
+            sparse: If True, uses the paper's 6-qubit sparse encoding (Color, P, N, B, R, Q).
 
         Returns:
-            3-bit status string.
+            Status bitstring.
         """
         if piece is None:
-            return "000"
+            return "000000" if sparse else "000"
 
         color_bit = "1" if piece.color is Color.WHITE else "0"
+        
+        if sparse:
+            sparse_map = {
+                PieceType.PAWN:   "10000",
+                PieceType.KNIGHT: "01000",
+                PieceType.BISHOP: "00100",
+                PieceType.ROOK:   "00010",
+                PieceType.QUEEN:  "00001",
+                PieceType.KING:   "00000",
+            }
+            return f"{color_bit}{sparse_map.get(piece.piece_type, '10000')}"
+
         type_map = {
             PieceType.PAWN:   "01",
             PieceType.KNIGHT: "10",

@@ -41,15 +41,18 @@ class PureQuantumRegisters:
     classical: ClassicalRegister = field(init=False)
 
     def __post_init__(self) -> None:
-        """Create Qiskit register objects matching the 19-qubit paper architecture."""
+        """Create Qiskit register objects matching the paper architecture."""
         axis_bits = math.ceil(math.log2(self.board_size)) if self.board_size > 1 else 1
         self.coord_bits = max(4, axis_bits * 2)
+
+        # 8x8 uses 6-bit sparse status encoding from the paper to reach exactly 33 qubits
+        self.status_bits = 6 if self.board_size == 8 else 3
 
         self.current_square = QuantumRegister(self.coord_bits, "cur")
         self.target_square = QuantumRegister(self.coord_bits, "tgt")
         self.direction = QuantumRegister(4, "dir")
-        self.src_status = QuantumRegister(3, "src")
-        self.dst_status = QuantumRegister(3, "dst")
+        self.src_status = QuantumRegister(self.status_bits, "src")
+        self.dst_status = QuantumRegister(self.status_bits, "dst")
         self.ancilla = QuantumRegister(5, "anc")
 
         total_qubits = self.total_qubits
@@ -68,11 +71,10 @@ class PureQuantumRegisters:
 
     @property
     def total_qubits(self) -> int:
-        """Calculate total qubit allocation count (19 qubits)."""
+        """Calculate total qubit allocation count."""
         return (
-            self.coord_bits * 2  # cur (6) + tgt (6) for 8x8
+            self.coord_bits * 2  # cur + tgt
             + 4  # dir (4)
-            + 3  # src (3)
-            + 3  # dst (3)
+            + self.status_bits * 2  # src + dst status
             + 5  # anc (5)
         )
