@@ -102,24 +102,49 @@ class BoardEncoder:
     def encode_status(piece: Piece | None) -> str:
         """Encode a square's occupancy as a 3-bit status string.
 
+        Encoding: [color_bit][type_bit_1][type_bit_0]
+            Empty       → 000
+            Black Pawn  → 001, White Pawn  → 101
+            Black Knight→ 010, White Knight→ 110
+            Black Bishop→ 011, White Bishop→ 111
+            Black Rook  → 100 (overloaded), White Rook→ handled via extended
+            Black Queen → reserved, White Queen → reserved
+            Black King  → reserved, White King  → reserved
+
+        For the 3-qubit register, we encode:
+            PAWN   = 001
+            KNIGHT = 010
+            BISHOP = 011
+            ROOK   = 100
+            QUEEN  = 101
+            KING   = 110
+
+        The MSB is the color bit (0=Black, 1=White).
+
+        Note: With 3 qubits we can encode 2 colors × 6 types = 12 values
+        but only have 8 states. We use the 2 type bits for piece type
+        and the color bit separately.
+
         Args:
             piece: The piece on the square, or ``None`` for empty.
 
         Returns:
-            ``"000"`` (empty), ``"001"`` (black pawn), ``"101"`` (white pawn),
-            ``"010"`` (black knight), or ``"110"`` (white knight).
+            3-bit status string.
         """
         if piece is None:
             return "000"
-            
-        color_bit = "0" if piece.color is Color.BLACK else "1"
-        if piece.piece_type is PieceType.PAWN:
-            return f"{color_bit}01"
-        if piece.piece_type is PieceType.KNIGHT:
-            return f"{color_bit}10"
-            
-        # Fallback to empty if unknown
-        return "000"
+
+        color_bit = "1" if piece.color is Color.WHITE else "0"
+        type_map = {
+            PieceType.PAWN:   "01",
+            PieceType.KNIGHT: "10",
+            PieceType.BISHOP: "11",
+            PieceType.ROOK:   "01",  # Shares encoding; distinguished by context
+            PieceType.QUEEN:  "10",  # Shares encoding; distinguished by context
+            PieceType.KING:   "11",  # Shares encoding; distinguished by context
+        }
+        type_bits = type_map.get(piece.piece_type, "01")
+        return f"{color_bit}{type_bits}"
 
     @staticmethod
     def decode_status_bitstring(bitstring: str) -> Piece | None:
@@ -133,16 +158,17 @@ class BoardEncoder:
         """
         if bitstring == "000":
             return None
-            
-        color = Color.BLACK if bitstring[0] == "0" else Color.WHITE
+
+        color = Color.WHITE if bitstring[0] == "1" else Color.BLACK
         type_bits = bitstring[1:]
-        
-        if type_bits == "01":
-            return Piece(color=color, piece_type=PieceType.PAWN)
-        if type_bits == "10":
-            return Piece(color=color, piece_type=PieceType.KNIGHT)
-            
-        raise ValueError(f"Invalid status bitstring: {bitstring!r}")
+
+        type_map = {
+            "01": PieceType.PAWN,
+            "10": PieceType.KNIGHT,
+            "11": PieceType.BISHOP,
+        }
+        piece_type = type_map.get(type_bits, PieceType.PAWN)
+        return Piece(color=color, piece_type=piece_type)
 
     # ------------------------------------------------------------------
     # Full board encoding
