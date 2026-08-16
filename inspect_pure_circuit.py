@@ -14,10 +14,10 @@ from pure_quantum_engine.circuit import PureQuantumCircuitBuilder
 
 def main() -> None:
     # 1. Create a basic game state
-    board = Board(size=3)
-    source = Position(2, 1)
-    target = Position(1, 1)
-    board.place_piece(source, Piece(Color.WHITE, PieceType.PAWN))
+    board = Board(size=8)
+    source = Position(4, 4)
+    target = Position(6, 5) # Knight L-shape
+    board.place_piece(source, Piece(Color.WHITE, PieceType.KNIGHT))
     state = GameState(board=board, current_turn=Color.WHITE)
 
     # 2. Build the pure quantum circuit for a move
@@ -43,8 +43,8 @@ def main() -> None:
     
     # 5. Optionally try to save as an image if matplotlib is installed
     try:
-        circuit.draw(output="mpl", filename="pure_circuit.png", style="iqp")
-        print("Saved graphical circuit diagram to 'pure_circuit.png'.")
+        circuit.draw(output="mpl", filename="with_knight.png", style="iqp", fold=-1)
+        print("Saved graphical circuit diagram to 'with_knight.png'.")
     except Exception as e:
         print(f"Could not save graphical diagram (matplotlib may not be installed): {e}")
 
