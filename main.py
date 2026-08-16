@@ -41,29 +41,12 @@ def generate_circuit_diagram(board_size: int, is_pure: bool) -> None:
 
     state = GameState(board=board, current_turn=Color.WHITE)
     
-    if is_pure:
-        circuit, _ = PureQuantumCircuitBuilder.build_full_chess_circuit(
-            state=state, source=source, target=target, color=Color.WHITE
-        )
-    else:
-        # Full hybrid architecture representation (including Grover)
-        axis_bits = math.ceil(math.log2(board_size))
-        coord_bits = axis_bits * 2
-        cur_sq = QuantumRegister(coord_bits, "cur_sq")
-        tgt_sq = QuantumRegister(coord_bits, "tgt_sq")
-        src_status = QuantumRegister(3, "src_status")
-        dst_status = QuantumRegister(3, "dst_status")
-        direction = QuantumRegister(4, "direction")
-        ancilla = QuantumRegister(5, "ancilla")
-        grover_move = QuantumRegister(5, "grover_move")
-        grover_flag = QuantumRegister(1, "grover_flag")
-        classical = ClassicalRegister(coord_bits*2 + 3 + 3 + 4 + 5 + 5 + 1, "meas")
-        
-        circuit = QuantumCircuit(cur_sq, tgt_sq, src_status, dst_status, direction, ancilla, grover_move, grover_flag, classical)
-        circuit.barrier(label="Architecture Skeleton")
-        # Dummy gates to represent the skeleton
-        circuit.h(grover_move)
-        circuit.measure(grover_move, classical[:5])
+    # Build the full, exact logic circuit for both 3x3 (23 qubits) and 8x8 (33 qubits).
+    # We do not simulate the 8x8 circuit here (which would require 128TB RAM), 
+    # we only assemble the gates to draw the architectural diagram.
+    circuit, _ = PureQuantumCircuitBuilder.build_full_chess_circuit(
+        state=state, source=source, target=target, color=Color.WHITE
+    )
 
     filename = f"architecture_{board_size}x{board_size}.png"
     print(f"\n========================================================")
@@ -158,7 +141,7 @@ def main() -> None:
         print("========================================================")
         print("1. Play 8x8 Hybrid Chess (You vs Quantum GPU AI)")
         print("2. Play 3x3 Pure Chess   (Academic Prototype metrics)")
-        print("3. Generate 33-Qubit 8x8 Architecture Diagram")
+        print("3. Generate 27-Qubit 8x8 Architecture Diagram")
         print("4. Generate 23-Qubit 3x3 Architecture Diagram")
         print("5. Exit")
         print("========================================================")
