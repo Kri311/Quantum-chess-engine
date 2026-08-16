@@ -38,9 +38,10 @@ def create_initial_pieces(
     pieces: dict[Position, Piece] = {}
 
     if size == 3:
-        # Single pawn per side — research prototype layout.
-        pieces[Position(row=size - 1, col=1)] = white_pawn
-        pieces[Position(row=0, col=1)] = black_pawn
+        # Research prototype layout: Pawns offset to allow captures/movement
+        # instead of immediately blocking each other.
+        pieces[Position(row=size - 1, col=1)] = white_pawn  # (2, 1)
+        pieces[Position(row=0, col=0)] = black_pawn         # (0, 0)
     else:
         # Generic layout: full row of pawns for each side.
         for col in range(size):
