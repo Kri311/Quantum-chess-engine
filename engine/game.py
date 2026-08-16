@@ -92,7 +92,25 @@ class Game:
         )
         if not is_legal:
             raise ValueError(f"Illegal move: {move}")
-        self.state = self.state.apply_move(move)
+            
+        # Apply the move to get the new state
+        new_state = self.state.apply_move(move)
+        
+        # Check if the new state leaves the opponent in check
+        opponent = self.state.current_turn.opponent()
+        if MoveGenerator.is_in_check(new_state, opponent):
+            if opponent is Color.WHITE:
+                new_state.checks_received_white = self.state.checks_received_white + 1
+                new_state.checks_received_black = self.state.checks_received_black
+            else:
+                new_state.checks_received_black = self.state.checks_received_black + 1
+                new_state.checks_received_white = self.state.checks_received_white
+        else:
+            # Carry over the counters if no new check
+            new_state.checks_received_white = self.state.checks_received_white
+            new_state.checks_received_black = self.state.checks_received_black
+            
+        self.state = new_state
 
     def is_over(self) -> bool:
         """Check whether the game has ended.

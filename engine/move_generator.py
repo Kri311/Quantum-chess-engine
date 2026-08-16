@@ -63,9 +63,15 @@ class MoveGenerator:
         color = state.current_turn
         board = state.board
         
+        # VARIANT RULE: If in check, the King MUST move. Blocking or capturing with other pieces is illegal.
+        currently_in_check = MoveGenerator.is_in_check(state, color)
+        
         for move in moves:
-            # Simulate move
             moving_piece = board.get_piece(move.start)
+            if currently_in_check and moving_piece.piece_type != PieceType.KING:
+                continue # Only King moves are allowed when in check!
+                
+            # Simulate move
             target_piece = board.get_piece(move.end)
             
             board.remove_piece(move.start)

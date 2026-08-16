@@ -31,6 +31,8 @@ class GameState:
     board: Board = field(default_factory=Board)
     current_turn: Color = Color.WHITE
     move_history: list[Move] = field(default_factory=list)
+    checks_received_white: int = 0
+    checks_received_black: int = 0
 
     # ------------------------------------------------------------------
     # Turn management

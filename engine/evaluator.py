@@ -34,7 +34,14 @@ class Evaluator:
         Returns:
             ``Color.WHITE``, ``Color.BLACK``, or ``None``.
         """
-        # Checkmate condition
+        # VARIANT: 2-Check Rule
+        # If a player has received 2 checks total, they lose immediately.
+        if state.checks_received_white >= 2:
+            return Color.BLACK
+        if state.checks_received_black >= 2:
+            return Color.WHITE
+            
+        # Standard Checkmate condition
         legal_moves = MoveGenerator.generate_legal_moves(state)
         if len(legal_moves) == 0:
             if MoveGenerator.is_in_check(state, state.current_turn):
