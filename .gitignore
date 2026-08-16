@@ -4,3 +4,5 @@ __pycache__/
 .pytest_cache/
 ..gitignore.swp
 **/__pycache__/
+venv1/
+.python-version
