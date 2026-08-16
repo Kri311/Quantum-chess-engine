@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from qiskit import QuantumCircuit, transpile
 from qiskit_aer import AerSimulator
+from qiskit_aer.noise import NoiseModel, depolarizing_error
 
 import config
 
@@ -44,7 +45,33 @@ class QuantumSimulator:
         """
         name = backend_name if backend_name is not None else config.QUANTUM_BACKEND
         self.shots: int = shots if shots is not None else config.QUANTUM_SHOTS
-        self._backend = AerSimulator()
+        
+        noise_model = None
+        if getattr(config, "QUANTUM_NOISE_ENABLED", False):
+            noise_model = self._build_noise_model()
+            
+        self._backend = AerSimulator(noise_model=noise_model)
+
+    def _build_noise_model(self) -> NoiseModel:
+        """Construct a noise model with depolarising errors.
+        
+        Returns:
+            Configured NoiseModel based on config probabilities.
+        """
+        noise_model = NoiseModel()
+        prob_1 = getattr(config, "QUANTUM_NOISE_PROB", 0.001)
+        prob_2 = prob_1 * 10  # Two-qubit gates are typically noisier
+
+        # Single qubit depolarizing error
+        error_1 = depolarizing_error(prob_1, 1)
+        # Two qubit depolarizing error
+        error_2 = depolarizing_error(prob_2, 2)
+
+        # Add errors to standard basis gates
+        noise_model.add_all_qubit_quantum_error(error_1, ['u1', 'u2', 'u3', 'x', 'h', 's', 't', 'rx', 'ry', 'rz'])
+        noise_model.add_all_qubit_quantum_error(error_2, ['cx', 'cz', 'swap'])
+        
+        return noise_model
 
     def run(self, circuit: QuantumCircuit) -> dict[str, int]:
         """Execute a circuit and return measurement counts.
