@@ -55,6 +55,7 @@ class Direction(Enum):
     FORWARD = auto()
     DIAGONAL_LEFT = auto()
     DIAGONAL_RIGHT = auto()
+    KNIGHT_MOVE = auto()
 
     def __str__(self) -> str:
         return self.name

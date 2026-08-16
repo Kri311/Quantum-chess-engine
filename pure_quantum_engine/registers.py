@@ -23,9 +23,9 @@ class PureQuantumRegisters:
         board_size: Side length of the chess board (default 3).
         current_square: 4-qubit source square register.
         target_square: 4-qubit target square register.
-        direction: 2-qubit direction output register.
-        src_status: 2-qubit source status register.
-        dst_status: 2-qubit target status register.
+        direction: 4-qubit direction output register (supports pawn & knight moves).
+        src_status: 3-qubit source status register.
+        dst_status: 3-qubit target status register.
         ancilla: Scratch workspace qubits.
         classical: Classical readout register.
     """
@@ -47,9 +47,9 @@ class PureQuantumRegisters:
 
         self.current_square = QuantumRegister(self.coord_bits, "cur")
         self.target_square = QuantumRegister(self.coord_bits, "tgt")
-        self.direction = QuantumRegister(2, "dir")
-        self.src_status = QuantumRegister(2, "src")
-        self.dst_status = QuantumRegister(2, "dst")
+        self.direction = QuantumRegister(4, "dir")
+        self.src_status = QuantumRegister(3, "src")
+        self.dst_status = QuantumRegister(3, "dst")
         self.ancilla = QuantumRegister(5, "anc")
 
         total_qubits = self.total_qubits
@@ -70,9 +70,9 @@ class PureQuantumRegisters:
     def total_qubits(self) -> int:
         """Calculate total qubit allocation count (19 qubits)."""
         return (
-            self.coord_bits * 2  # cur (4) + tgt (4)
-            + 2  # dir (2)
-            + 2  # src (2)
-            + 2  # dst (2)
+            self.coord_bits * 2  # cur (6) + tgt (6) for 8x8
+            + 4  # dir (4)
+            + 3  # src (3)
+            + 3  # dst (3)
             + 5  # anc (5)
         )

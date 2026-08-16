@@ -71,6 +71,10 @@ class Rules:
         if direction in (Direction.DIAGONAL_LEFT, Direction.DIAGONAL_RIGHT):
             return target_piece is not None and target_piece.color is not color
 
+        # Knight Move: can be empty or enemy
+        if direction is Direction.KNIGHT_MOVE:
+            return target_piece is None or target_piece.color is not color
+
         return False
 
     # ------------------------------------------------------------------

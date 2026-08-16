@@ -27,9 +27,9 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["console", "gui", "quantum"],
+        choices=["console", "gui", "quantum", "quantum_gui"],
         default="console",
-        help="Game mode: console (default), gui, or quantum.",
+        help="Game mode: console (default), gui, quantum (AI vs AI), or quantum_gui (Human vs Quantum AI).",
     )
     return parser.parse_args()
 
@@ -55,8 +55,17 @@ def main() -> None:
         from engine.game import Game
 
         game = Game()
-        engine = HybridEngine()
+        engine = HybridEngine(use_quantum=True)
         engine.play_game(game)
+        
+    elif args.mode == "quantum_gui":
+        from ai.hybrid_engine import HybridEngine
+        from ui.gui import ChessGUI
+        from engine.constants import Color
+        
+        engine = HybridEngine(use_quantum=True)
+        gui = ChessGUI(engine=engine, ai_color=Color.BLACK)
+        gui.run()
 
     else:
         print(f"Unknown mode: {args.mode}", file=sys.stderr)

@@ -103,7 +103,7 @@ class PureQuantumCircuitBuilder:
                 pos = Position(row, col)
                 piece = board.get_piece(pos)
                 status = BoardEncoder.encode_status(piece)
-                if status == "00":
+                if status == "000":
                     continue
 
                 coord_bits = BoardEncoder.encode_position(pos, board.size)
@@ -113,10 +113,9 @@ class PureQuantumCircuitBuilder:
                         circuit.x(coord_qubits[i])
                         flip_indices.append(i)
 
-                if status[1] == "1":
-                    circuit.mcx(coord_qubits, status_output[0])
-                if status[0] == "1":
-                    circuit.mcx(coord_qubits, status_output[1])
+                for i, bit in enumerate(reversed(status)):
+                    if bit == "1":
+                        circuit.mcx(coord_qubits, status_output[i])
 
                 for i in flip_indices:
                     circuit.x(coord_qubits[i])
@@ -138,21 +137,26 @@ class PureQuantumCircuitBuilder:
             circuit.x(tgt_x[i])
             circuit.cx(cur_x[i], tgt_x[i])
 
-        # Forward move -> set direction = |11>
+        # Forward move -> set direction = |0011>
         circuit.cx(ancilla[0], direction[0])
         circuit.cx(ancilla[0], direction[1])
 
-        # Diagonal left -> set direction = |10>
+        # Diagonal left -> set direction = |0010>
         circuit.x(tgt_x[1])
         circuit.ccx(cur_x[1], tgt_x[1], ancilla[1])
         circuit.x(tgt_x[1])
         circuit.cx(ancilla[1], direction[1])
 
-        # Diagonal right -> set direction = |01>
+        # Diagonal right -> set direction = |0001>
         circuit.x(cur_x[1])
         circuit.ccx(tgt_x[1], cur_x[1], ancilla[2])
         circuit.x(cur_x[1])
         circuit.cx(ancilla[2], direction[0])
+        
+        # Note for 8x8 Knight scaling:
+        # A full quantum subtractor and absolute value circuit is required here 
+        # to detect |cur_x - tgt_x| == 2 and |cur_y - tgt_y| == 1 (and vice versa).
+        # When detected, it would set direction[3] to 1.
 
     @staticmethod
     def _add_status_operator(
@@ -163,17 +167,18 @@ class PureQuantumCircuitBuilder:
         ancilla: list,
     ) -> None:
         """Execute status swap/capture transformation."""
-        circuit.x(dst_status[0])
-        circuit.x(dst_status[1])
-        controls = [direction[0], direction[1], dst_status[0], dst_status[1]]
+        # For 8x8, this operator requires swapping/capturing 3-qubit statuses 
+        # conditionally based on the 4-qubit direction register.
+        # Below is the extended shell of the 3x3 operator logic adapted.
+        for i in range(3):
+            circuit.x(dst_status[i])
+            
+        controls = list(direction) + list(dst_status)
 
-        circuit.mcx(controls + [src_status[0]], ancilla[0])
-        circuit.cx(ancilla[0], dst_status[0])
-        circuit.mcx(controls + [src_status[0]], ancilla[0])
+        for i in range(3):
+            circuit.mcx(controls + [src_status[i]], ancilla[0])
+            circuit.cx(ancilla[0], dst_status[i])
+            circuit.mcx(controls + [src_status[i]], ancilla[0])
 
-        circuit.mcx(controls + [src_status[1]], ancilla[1])
-        circuit.cx(ancilla[1], dst_status[1])
-        circuit.mcx(controls + [src_status[1]], ancilla[1])
-
-        circuit.x(dst_status[1])
-        circuit.x(dst_status[0])
+        for i in range(3):
+            circuit.x(dst_status[i])

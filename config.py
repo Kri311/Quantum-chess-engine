@@ -9,8 +9,8 @@ and provide a single source of truth across all modules.
 # Board configuration
 # ---------------------------------------------------------------------------
 
-BOARD_SIZE: int = 3
-"""Side length of the square board (3 for the research prototype)."""
+BOARD_SIZE: int = 8
+"""Side length of the square board (3 for the research prototype, 8 for standard)."""
 
 TOTAL_SQUARES: int = BOARD_SIZE * BOARD_SIZE
 """Total number of squares on the board."""

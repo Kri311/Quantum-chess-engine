@@ -92,6 +92,8 @@ class MoveGenerator:
         """
         if piece.piece_type is PieceType.PAWN:
             return MoveGenerator._pawn_moves(state, position, piece.color)
+        if piece.piece_type is PieceType.KNIGHT:
+            return MoveGenerator._knight_moves(state, position, piece.color)
 
         # Future piece types would be dispatched here.
         return []
@@ -136,4 +138,37 @@ class MoveGenerator:
                 if Rules.is_valid_move(state, diag_move):
                     candidates.append(diag_move)
 
+        return candidates
+
+    @staticmethod
+    def _knight_moves(
+        state: GameState,
+        position: Position,
+        color: Color,
+    ) -> list[Move]:
+        """Generate all legal knight moves from *position*."""
+        board = state.board
+        candidates: list[Move] = []
+        
+        knight_offsets = [
+            (-2, -1), (-2, 1), (-1, -2), (-1, 2),
+            (1, -2), (1, 2), (2, -1), (2, 1)
+        ]
+        
+        for d_row, d_col in knight_offsets:
+            target_row = position.row + d_row
+            target_col = position.col + d_col
+            
+            if 0 <= target_row < board.size and 0 <= target_col < board.size:
+                target_pos = Position(target_row, target_col)
+                target_piece = board.get_piece(target_pos)
+                
+                capture = target_piece is not None
+                if capture and target_piece.color is color:
+                    continue  # Can't capture own piece
+                    
+                move = Move(start=position, end=target_pos, capture=capture)
+                if Rules.is_valid_move(state, move):
+                    candidates.append(move)
+                    
         return candidates

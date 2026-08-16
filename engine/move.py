@@ -60,6 +60,9 @@ class Move:
             return Direction.DIAGONAL_LEFT
         if row_delta == forward_step and col_delta == 1:
             return Direction.DIAGONAL_RIGHT
+            
+        if (abs(row_delta) == 2 and abs(col_delta) == 1) or (abs(row_delta) == 1 and abs(col_delta) == 2):
+            return Direction.KNIGHT_MOVE
 
         raise ValueError(
             f"Unrecognised pawn direction: Δrow={row_delta}, Δcol={col_delta}"

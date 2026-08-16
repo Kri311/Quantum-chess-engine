@@ -100,37 +100,48 @@ class BoardEncoder:
 
     @staticmethod
     def encode_status(piece: Piece | None) -> str:
-        """Encode a square's occupancy as a 2-bit status string.
+        """Encode a square's occupancy as a 3-bit status string.
 
         Args:
             piece: The piece on the square, or ``None`` for empty.
 
         Returns:
-            ``"00"`` (empty), ``"01"`` (black pawn), or ``"10"``
-            (white pawn).
+            ``"000"`` (empty), ``"001"`` (black pawn), ``"101"`` (white pawn),
+            ``"010"`` (black knight), or ``"110"`` (white knight).
         """
         if piece is None:
-            return "00"
-        if piece.color is Color.BLACK:
-            return "01"
-        return "10"
+            return "000"
+            
+        color_bit = "0" if piece.color is Color.BLACK else "1"
+        if piece.piece_type is PieceType.PAWN:
+            return f"{color_bit}01"
+        if piece.piece_type is PieceType.KNIGHT:
+            return f"{color_bit}10"
+            
+        # Fallback to empty if unknown
+        return "000"
 
     @staticmethod
     def decode_status_bitstring(bitstring: str) -> Piece | None:
-        """Decode a 2-bit status string to a ``Piece`` or ``None``.
+        """Decode a 3-bit status string to a ``Piece`` or ``None``.
 
         Args:
-            bitstring: ``"00"``, ``"01"``, or ``"10"``.
+            bitstring: 3-bit string (e.g. ``"000"``, ``"101"``).
 
         Returns:
             ``None`` for empty, otherwise a ``Piece``.
         """
-        if bitstring == "00":
+        if bitstring == "000":
             return None
-        if bitstring == "01":
-            return Piece(color=Color.BLACK, piece_type=PieceType.PAWN)
-        if bitstring == "10":
-            return Piece(color=Color.WHITE, piece_type=PieceType.PAWN)
+            
+        color = Color.BLACK if bitstring[0] == "0" else Color.WHITE
+        type_bits = bitstring[1:]
+        
+        if type_bits == "01":
+            return Piece(color=color, piece_type=PieceType.PAWN)
+        if type_bits == "10":
+            return Piece(color=color, piece_type=PieceType.KNIGHT)
+            
         raise ValueError(f"Invalid status bitstring: {bitstring!r}")
 
     # ------------------------------------------------------------------

@@ -18,6 +18,7 @@ from engine.move import Move
 from engine.position import Position
 from ui.animations import MoveAnimator
 from ui.renderer import BoardRenderer
+from ai.hybrid_engine import HybridEngine
 
 
 class ChessGUI:
@@ -25,9 +26,11 @@ class ChessGUI:
 
     Attributes:
         game: The underlying ``Game`` instance.
+        engine: The AI engine to use, or None for two-player human.
+        ai_color: The color the AI plays, or None.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, engine: HybridEngine | None = None, ai_color: Color | None = None) -> None:
         """Initialise pygame and create the window."""
         pygame.init()
         pygame.display.set_caption("Quantum Chess Engine — 3×3 Pawn Chess")
@@ -41,11 +44,14 @@ class ChessGUI:
         self._animator: MoveAnimator = MoveAnimator()
 
         self.game: Game = Game()
+        self.engine = engine
+        self.ai_color = ai_color
 
         # Interaction state.
         self._selected: Position | None = None
         self._legal_targets: list[Position] = []
         self._running: bool = True
+        self._ai_thinking: bool = False
 
     # ------------------------------------------------------------------
     # Main loop
@@ -102,11 +108,14 @@ class ChessGUI:
         Args:
             pixel: ``(x, y)`` screen coordinates of the click.
         """
-        if self._animator.is_animating:
-            return  # ignore clicks during animation
+        if self._animator.is_animating or self._ai_thinking:
+            return  # ignore clicks during animation or AI thinking
 
         if self.game.is_over():
             return
+            
+        if self.ai_color is not None and self.game.state.current_turn is self.ai_color:
+            return  # ignore clicks if it's AI's turn
 
         pos = self._renderer.pixel_to_position(*pixel)
         if pos is None:
@@ -199,6 +208,20 @@ class ChessGUI:
                 if hasattr(self, "_pending_move") and self._pending_move:
                     self.game.make_move(self._pending_move)
                     self._pending_move = None
+                    
+        # AI Turn handling
+        if not self._animator.is_animating and not self.game.is_over():
+            if self.engine is not None and self.game.state.current_turn is self.ai_color:
+                if not getattr(self, "_ai_thinking", False):
+                    self._ai_thinking = True
+                    # Force a draw so the screen updates before the blocking search
+                    self._draw()
+                    pygame.display.flip()
+                    
+                    move = self.engine.select_move(self.game.state)
+                    if move:
+                        self._execute_move(move)
+                    self._ai_thinking = False
 
     # ------------------------------------------------------------------
     # Drawing
