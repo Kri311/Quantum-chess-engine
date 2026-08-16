@@ -25,10 +25,10 @@ QUANTUM_SHOTS: int = 1024
 QUANTUM_BACKEND: str = "aer_simulator"
 """Qiskit Aer backend identifier used for local simulation."""
 
-QUANTUM_NOISE_ENABLED: bool = True
+QUANTUM_NOISE_ENABLED: bool = False
 """Whether to enable realistic quantum noise simulation."""
 
-QUANTUM_NOISE_PROB: float = 0.01
+QUANTUM_NOISE_PROB: float = 0.001
 """Probability of depolarizing error for single-qubit gates (two-qubit gets 10x this)."""
 
 # ---------------------------------------------------------------------------
