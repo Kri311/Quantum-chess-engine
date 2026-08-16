@@ -50,7 +50,10 @@ class QuantumSimulator:
         if getattr(config, "QUANTUM_NOISE_ENABLED", False):
             noise_model = self._build_noise_model()
             
-        self._backend = AerSimulator(noise_model=noise_model)
+        try:
+            self._backend = AerSimulator(noise_model=noise_model, device="GPU")
+        except Exception:
+            self._backend = AerSimulator(noise_model=noise_model)
 
     def _build_noise_model(self) -> NoiseModel:
         """Construct a noise model with depolarising errors.
