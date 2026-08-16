@@ -45,19 +45,20 @@ class GroverSearch:
         self,
         state: GameState,
         candidates: list[Move] | None = None,
+        optimal_indices: list[int] | None = None,
     ) -> Move | None:
-        """Run Grover's algorithm to select a legal move.
-
-        If candidates are not provided, generates all possible pawn
-        moves (legal and illegal) as the search space.
+        """Run Grover's algorithm to select an optimal move.
 
         Args:
             state: Current game state.
             candidates: Optional list of candidate moves. If None,
                 all possible moves are generated.
+            optimal_indices: Optional list of indices corresponding to
+                heuristically optimal moves to amplify. If None,
+                amplifies all legal moves.
 
         Returns:
-            The selected Move, or None if no legal moves exist.
+            The selected Move, or None if no moves exist.
         """
         if candidates is None:
             candidates = MoveOracle.generate_all_candidates(state)
@@ -65,26 +66,29 @@ class GroverSearch:
         if not candidates:
             return None
 
-        # Determine which candidates are legal.
-        legal_indices = MoveOracle.compute_legal_indices(state, candidates)
+        # Determine which candidates to amplify.
+        if optimal_indices is not None:
+            target_indices = optimal_indices
+        else:
+            target_indices = MoveOracle.compute_legal_indices(state, candidates)
 
-        if not legal_indices:
+        if not target_indices:
             return None
 
         n_candidates = len(candidates)
         n_qubits = math.ceil(math.log2(n_candidates)) if n_candidates > 1 else 1
         search_space = 2 ** n_qubits
 
-        # If all candidates are legal, just return the first one.
-        if len(legal_indices) == n_candidates:
-            return candidates[legal_indices[0]]
+        # If all candidates are targets, just return the first one.
+        if len(target_indices) == n_candidates:
+            return candidates[target_indices[0]]
 
         # Calculate optimal number of Grover iterations.
-        n_iterations = self.calculate_iterations(search_space, len(legal_indices))
+        n_iterations = self.calculate_iterations(search_space, len(target_indices))
 
         # Build the Grover circuit.
         circuit = self._build_grover_circuit(
-            n_qubits, legal_indices, n_iterations
+            n_qubits, target_indices, n_iterations
         )
 
         # Execute and measure.
@@ -97,12 +101,12 @@ class GroverSearch:
         # Convert bitstring to move index.
         move_index = int(best_bitstring[::-1], 2)  # Qiskit little-endian.
 
-        if move_index < len(candidates) and move_index in legal_indices:
+        if move_index < len(candidates) and move_index in target_indices:
             return candidates[move_index]
 
-        # Fallback: if Grover didn't amplify a legal move (can happen
-        # with low iteration counts), return the first legal move.
-        return candidates[legal_indices[0]]
+        # Fallback: if Grover didn't amplify a target move (can happen
+        # with low iteration counts), return the first target move.
+        return candidates[target_indices[0]]
 
     @staticmethod
     def calculate_iterations(n_total: int, n_solutions: int) -> int:

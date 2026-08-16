@@ -51,10 +51,25 @@ class QuantumMoveSearcher:
         if not legal_moves:
             return None
 
-        # Attempt quantum search.
-        result = self.grover.search(state)
+        # Classical pre-processing: Score all legal moves using heuristics
+        from ai.heuristic import HeuristicEvaluator
+        
+        best_score = -float('inf')
+        optimal_indices = []
+        
+        for idx, move in enumerate(legal_moves):
+            score = HeuristicEvaluator.score_move(state, move)
+            if score > best_score:
+                best_score = score
+                optimal_indices = [idx]
+            elif score == best_score:
+                optimal_indices.append(idx)
+
+        # Attempt quantum search to amplify only the optimal moves.
+        result = self.grover.search(state, candidates=legal_moves, optimal_indices=optimal_indices)
+        
         if result is not None:
             return result
 
-        # Fallback: return a random legal move.
-        return random.choice(legal_moves)
+        # Fallback: return a random optimal move.
+        return legal_moves[optimal_indices[0]]
