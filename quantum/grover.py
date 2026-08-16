@@ -92,11 +92,28 @@ class GroverSearch:
         )
 
         # Execute and measure.
+        import time
+        t0 = time.time()
         counts = self.simulator.run(circuit)
+        t1 = time.time()
 
         # Decode the most likely result.
         processor = MeasurementProcessor()
         best_bitstring = processor.get_most_likely(counts)
+        
+        # Calculate amplitude/probability for metrics
+        total_shots = sum(counts.values())
+        prob = (counts[best_bitstring] / total_shots * 100) if total_shots > 0 else 0.0
+
+        # Print Hybrid Quantum Metrics for Option 1
+        print(f"\n[HYBRID QUANTUM METRICS] Executing Grover Search for AI Move...")
+        print(f"  ► Target Circuit: {circuit.num_qubits} Qubits")
+        print(f"  ► Grover Iters:   {n_iterations} iterations")
+        print(f"  ► Quantum Depth:  {circuit.depth()} gates")
+        print(f"  ► Exec Time:      {(t1-t0)*1000:.1f} ms")
+        print(f"  ► Prob Amplitude: {prob:.1f}% (Amplified by Diffuser)")
+        print(f"  ► Measurement:    |{best_bitstring}⟩")
+        print(f"  ► Status:         Collapsed. UI updating.")
 
         # Convert bitstring to move index.
         move_index = int(best_bitstring[::-1], 2)  # Qiskit little-endian.
