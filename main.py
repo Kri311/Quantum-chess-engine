@@ -28,6 +28,7 @@ def generate_circuit_diagram(board_size: int, is_pure: bool) -> None:
     from pure_quantum_engine.circuit import PureQuantumCircuitBuilder
 
     print(f"\n[GENERATOR] Building circuit architecture for {board_size}x{board_size} board...")
+    config.BOARD_SIZE = board_size
     
     board = Board(size=board_size)
     if board_size == 3:
