@@ -75,17 +75,20 @@ class HeuristicEvaluator:
         if move.capture:
             score += 10.0
 
-        # Advancing toward promotion is good.
+        # Advancing toward promotion is good for pawns.
+        piece = state.board.get_piece(move.start)
         board_size = state.board.size
-        if state.current_turn is Color.WHITE:
-            advancement = (board_size - 1 - move.end.row)
-            score += advancement * 2.0
-        else:
-            score += move.end.row * 2.0
+        
+        if piece and piece.piece_type.name == "PAWN":
+            if state.current_turn is Color.WHITE:
+                advancement = (board_size - 1 - move.end.row)
+                score += advancement * 2.0
+            else:
+                score += move.end.row * 2.0
 
-        # Centre column preference.
-        centre = board_size // 2
-        distance_to_centre = abs(move.end.col - centre)
-        score += (board_size - distance_to_centre) * 0.5
+        # Centre control preference for all pieces (highly important for knights)
+        centre = board_size / 2.0
+        distance_to_centre = abs(move.end.col - centre) + abs(move.end.row - centre)
+        score += ((board_size * 2) - distance_to_centre) * 0.5
 
         return score

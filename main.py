@@ -55,7 +55,7 @@ def main() -> None:
         from engine.game import Game
 
         game = Game()
-        engine = HybridEngine(use_quantum=True)
+        engine = HybridEngine(use_quantum=False) # Fallback to classical minimax for real-time play
         engine.play_game(game)
         
     elif args.mode == "quantum_gui":
@@ -63,7 +63,7 @@ def main() -> None:
         from ui.gui import ChessGUI
         from engine.constants import Color
         
-        engine = HybridEngine(use_quantum=True)
+        engine = HybridEngine(use_quantum=False)
         gui = ChessGUI(engine=engine, ai_color=Color.BLACK)
         gui.run()
 

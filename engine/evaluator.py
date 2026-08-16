@@ -8,7 +8,7 @@ the quantum evaluation oracle) and concrete win / draw detection.
 from __future__ import annotations
 
 from engine.board import Board
-from engine.constants import Color
+from engine.constants import Color, PieceType
 from engine.move_generator import MoveGenerator
 from engine.position import Position
 from engine.state import GameState
@@ -42,12 +42,14 @@ class Evaluator:
 
         for pos, piece in board.pieces_by_color(Color.WHITE):
             white_alive = True
-            if pos.row == 0:
+            # In 3x3 pawn chess, reaching the end was a win. For 8x8, we disable this
+            # or limit it to pawns if desired. Let's limit it to pawns.
+            if piece.piece_type == PieceType.PAWN and pos.row == 0:
                 return Color.WHITE
 
         for pos, piece in board.pieces_by_color(Color.BLACK):
             black_alive = True
-            if pos.row == board.size - 1:
+            if piece.piece_type == PieceType.PAWN and pos.row == board.size - 1:
                 return Color.BLACK
 
         if not white_alive:
@@ -100,15 +102,28 @@ class Evaluator:
         max_distance: float = float(board.size - 1)
 
         for pos, piece in board.pieces_by_color(Color.WHITE):
-            score += 1.0  # material
-            # White moves upward: advancement = (start_row - current_row).
-            advancement = (board.size - 1 - pos.row) / max_distance
-            score += advancement * 0.5
+            val = 1.0 if piece.piece_type == PieceType.PAWN else 3.0
+            score += val  # material
+            
+            # Advancement bonus for pawns
+            if piece.piece_type == PieceType.PAWN:
+                advancement = (board.size - 1 - pos.row) / max_distance
+                score += advancement * 0.5
+                
+            # Center control
+            center_dist = abs(pos.col - board.size / 2) + abs(pos.row - board.size / 2)
+            score += (board.size - center_dist) * 0.1
 
         for pos, piece in board.pieces_by_color(Color.BLACK):
-            score -= 1.0  # material
-            advancement = pos.row / max_distance
-            score -= advancement * 0.5
+            val = 1.0 if piece.piece_type == PieceType.PAWN else 3.0
+            score -= val  # material
+            
+            if piece.piece_type == PieceType.PAWN:
+                advancement = pos.row / max_distance
+                score -= advancement * 0.5
+                
+            center_dist = abs(pos.col - board.size / 2) + abs(pos.row - board.size / 2)
+            score -= (board.size - center_dist) * 0.1
 
         # Terminal bonuses.
         winner = Evaluator.winner(state)
