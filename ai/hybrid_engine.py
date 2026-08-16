@@ -40,7 +40,7 @@ class HybridEngine:
                 If False, fall back to pure minimax.
         """
         self.use_quantum: bool = use_quantum
-        self.minimax = MinimaxEngine(max_depth=6)
+        self.minimax = MinimaxEngine(max_depth=3)
         self.quantum_searcher = QuantumMoveSearcher()
 
     def select_move(self, state: GameState) -> Move | None:

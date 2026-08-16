@@ -51,7 +51,7 @@ class QuantumSimulator:
             noise_model = self._build_noise_model()
             
         try:
-            self._backend = AerSimulator(noise_model=noise_model, device="GPU")
+            self._backend = AerSimulator(method="statevector", noise_model=noise_model, device="GPU")
         except Exception:
             self._backend = AerSimulator(noise_model=noise_model)
 
@@ -88,8 +88,22 @@ class QuantumSimulator:
         transpiled = transpile(
             circuit, basis_gates=_AER_BASIS_GATES, optimization_level=1,
         )
-        job = self._backend.run(transpiled, shots=self.shots)
-        result = job.result()
+        try:
+            job = self._backend.run(transpiled, shots=self.shots)
+            result = job.result()
+        except RuntimeError as e:
+            if "GPU" in str(e):
+                print("GPU simulation failed, falling back to CPU...")
+                # Fallback to CPU backend
+                noise_model = None
+                if getattr(config, "QUANTUM_NOISE_ENABLED", False):
+                    noise_model = self._build_noise_model()
+                self._backend = AerSimulator(method="statevector", noise_model=noise_model)
+                job = self._backend.run(transpiled, shots=self.shots)
+                result = job.result()
+            else:
+                raise e
+                
         return result.get_counts(transpiled)
 
     def run_statevector(self, circuit: QuantumCircuit) -> dict[str, complex]:
