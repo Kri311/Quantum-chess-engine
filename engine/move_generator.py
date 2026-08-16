@@ -29,45 +29,85 @@ class MoveGenerator:
     def generate_legal_moves(state: GameState) -> list[Move]:
         """Return every legal move for the player whose turn it is.
 
-        Args:
-            state: Current game snapshot.
-
-        Returns:
-            List of legal ``Move`` objects (may be empty if no moves
-            are available).
+        Filters out any pseudo-legal moves that would leave the king in check.
         """
-        moves: list[Move] = []
+        pseudo_legal_moves: list[Move] = []
         color: Color = state.current_turn
 
         for position, piece in state.board.pieces_by_color(color):
-            moves.extend(
+            pseudo_legal_moves.extend(
                 MoveGenerator._generate_moves_for_piece(
                     state, position, piece
                 )
             )
 
-        return moves
+        return MoveGenerator._filter_safe_moves(state, pseudo_legal_moves)
 
     @staticmethod
     def generate_moves_for_position(
         state: GameState,
         position: Position,
     ) -> list[Move]:
-        """Return legal moves for the piece at *position*.
-
-        Args:
-            state: Current game snapshot.
-            position: Square to query.
-
-        Returns:
-            List of legal ``Move`` objects originating from *position*.
-        """
+        """Return legal moves for the piece at *position*."""
         piece: Piece | None = state.board.get_piece(position)
-        if piece is None:
+        if piece is None or piece.color is not state.current_turn:
             return []
-        if piece.color is not state.current_turn:
-            return []
-        return MoveGenerator._generate_moves_for_piece(state, position, piece)
+            
+        pseudo_legal_moves = MoveGenerator._generate_moves_for_piece(state, position, piece)
+        return MoveGenerator._filter_safe_moves(state, pseudo_legal_moves)
+        
+    @staticmethod
+    def _filter_safe_moves(state: GameState, moves: list[Move]) -> list[Move]:
+        """Filter out moves that leave the current player's King in check."""
+        legal_moves = []
+        color = state.current_turn
+        board = state.board
+        
+        for move in moves:
+            # Simulate move
+            moving_piece = board.get_piece(move.start)
+            target_piece = board.get_piece(move.end)
+            
+            board.remove_piece(move.start)
+            board.place_piece(move.end, moving_piece)
+            
+            if not MoveGenerator.is_in_check(state, color):
+                legal_moves.append(move)
+                
+            # Undo move
+            board.place_piece(move.start, moving_piece)
+            if target_piece:
+                board.place_piece(move.end, target_piece)
+            else:
+                board.remove_piece(move.end)
+                
+        return legal_moves
+
+    @staticmethod
+    def is_in_check(state: GameState, color: Color) -> bool:
+        """Return True if the King of the given color is under attack."""
+        board = state.board
+        king_pos = None
+        
+        # Find the King
+        for pos, piece in board.pieces_by_color(color):
+            if piece.piece_type == PieceType.KING:
+                king_pos = pos
+                break
+                
+        if king_pos is None:
+            return False  # If no King (e.g. 3x3 pawn-only variant), cannot be in check
+            
+        enemy_color = Color.BLACK if color is Color.WHITE else Color.WHITE
+        
+        # Check if any enemy piece can move to the King's position
+        for pos, piece in board.pieces_by_color(enemy_color):
+            enemy_moves = MoveGenerator._generate_moves_for_piece(state, pos, piece)
+            for move in enemy_moves:
+                if move.end == king_pos:
+                    return True
+                    
+        return False
 
     # ------------------------------------------------------------------
     # Piece-specific generators (strategy methods)

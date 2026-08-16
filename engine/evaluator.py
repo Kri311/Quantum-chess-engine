@@ -25,9 +25,8 @@ class Evaluator:
     def winner(state: GameState) -> Color | None:
         """Return the winning colour, or ``None`` if the game is ongoing.
 
-        A player wins by:
-        * Capturing the opponent's last pawn.
-        * Reaching the promotion row (row 0 for White, last row for Black).
+        Checkmate: The current player is in check and has no legal moves.
+        In this case, the opponent wins.
 
         Args:
             state: Current game snapshot.
@@ -35,11 +34,15 @@ class Evaluator:
         Returns:
             ``Color.WHITE``, ``Color.BLACK``, or ``None``.
         """
+        # Checkmate condition
+        legal_moves = MoveGenerator.generate_legal_moves(state)
+        if len(legal_moves) == 0:
+            if MoveGenerator.is_in_check(state, state.current_turn):
+                # The player whose turn it is got checkmated
+                return Color.BLACK if state.current_turn is Color.WHITE else Color.WHITE
+
+        # Fallback: Capture King condition (for legacy 3x3 or testing)
         board: Board = state.board
-
-        white_alive = False
-        black_alive = False
-
         white_king_alive = False
         black_king_alive = False
 
@@ -51,9 +54,9 @@ class Evaluator:
             if piece.piece_type == PieceType.KING:
                 black_king_alive = True
 
-        if not white_king_alive:
+        if not white_king_alive and black_king_alive:
             return Color.BLACK
-        if not black_king_alive:
+        if not black_king_alive and white_king_alive:
             return Color.WHITE
 
         return None
@@ -62,8 +65,7 @@ class Evaluator:
     def is_draw(state: GameState) -> bool:
         """Return ``True`` if the game is a draw.
 
-        The game is drawn when the current player has no legal moves and
-        neither side has won.
+        Stalemate: The current player has no legal moves but is NOT in check.
 
         Args:
             state: Current game snapshot.
@@ -73,7 +75,13 @@ class Evaluator:
         """
         if Evaluator.winner(state) is not None:
             return False
-        return len(MoveGenerator.generate_legal_moves(state)) == 0
+            
+        legal_moves = MoveGenerator.generate_legal_moves(state)
+        if len(legal_moves) == 0:
+            if not MoveGenerator.is_in_check(state, state.current_turn):
+                return True
+                
+        return False
 
     # ------------------------------------------------------------------
     # Heuristic scoring
@@ -86,9 +94,9 @@ class Evaluator:
         Positive values favour White; negative values favour Black.
         The score considers:
 
-        * **Material** — each surviving pawn is worth 1.0 point.
-        * **Advancement** — pawns closer to the promotion row receive a
-          bonus proportional to (distance covered / total distance).
+        * **Checkmate** — ±10000.0 points.
+        * **Material** — each piece is scored by its standard chess value.
+        * **Advancement/Position** — centre control and pawn advancement.
 
         Args:
             state: Current game snapshot.
@@ -96,6 +104,16 @@ class Evaluator:
         Returns:
             Floating-point evaluation.
         """
+        # Terminal bonuses (Checkmate is infinite priority)
+        winner = Evaluator.winner(state)
+        if winner is Color.WHITE:
+            return 10000.0
+        elif winner is Color.BLACK:
+            return -10000.0
+            
+        if Evaluator.is_draw(state):
+            return 0.0
+
         board: Board = state.board
         score: float = 0.0
         max_distance: float = float(board.size - 1)
@@ -106,7 +124,7 @@ class Evaluator:
             if pt == PieceType.BISHOP: return 3.0
             if pt == PieceType.ROOK: return 5.0
             if pt == PieceType.QUEEN: return 9.0
-            if pt == PieceType.KING: return 100.0
+            if pt == PieceType.KING: return 0.0 # King has no trading value
             return 1.0
 
         for pos, piece in board.pieces_by_color(Color.WHITE):
@@ -132,12 +150,5 @@ class Evaluator:
                 
             center_dist = abs(pos.col - board.size / 2.0) + abs(pos.row - board.size / 2.0)
             score -= (board.size - center_dist) * 0.1
-
-        # Terminal bonuses.
-        winner = Evaluator.winner(state)
-        if winner is Color.WHITE:
-            score += 100.0
-        elif winner is Color.BLACK:
-            score -= 100.0
 
         return score
