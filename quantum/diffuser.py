@@ -45,10 +45,13 @@ class GroverDiffuser:
             circuit.x(qubits[i])
 
         # Step 3: Multi-controlled Z gate.
-        # MCZ = H on last qubit, MCX, H on last qubit.
-        circuit.h(qubits[n - 1])
-        circuit.mcx(list(qubits[: n - 1]), qubits[n - 1])
-        circuit.h(qubits[n - 1])
+        # MCZ = H on last qubit, MCX, H on last qubit (or just Z for n=1).
+        if n == 1:
+            circuit.z(qubits[0])
+        else:
+            circuit.h(qubits[n - 1])
+            circuit.mcx(list(qubits[: n - 1]), qubits[n - 1])
+            circuit.h(qubits[n - 1])
 
         # Step 4: Apply X to all qubits.
         for i in range(n):
