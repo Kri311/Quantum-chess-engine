@@ -30,8 +30,8 @@ def generate_test_positions(num_positions=20):
         board = Board(size=3)
         w_col = random.choice([0, 1, 2])
         b_col = random.choice([0, 1, 2])
-        board.place_piece(Position(2, w_col), Piece(Color.WHITE, PieceType.PAWN))
-        board.place_piece(Position(0, b_col), Piece(Color.BLACK, PieceType.PAWN))
+        board.place_piece(Position(2, 2), Piece(Color.WHITE, PieceType.PAWN))
+        board.place_piece(Position(0, 2), Piece(Color.BLACK, PieceType.PAWN))
         state = GameState(board=board, current_turn=Color.WHITE)
         
         while len(states) < num_positions:
