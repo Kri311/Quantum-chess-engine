@@ -16,6 +16,34 @@ TOTAL_SQUARES: int = BOARD_SIZE * BOARD_SIZE
 """Total number of squares on the board."""
 
 # ---------------------------------------------------------------------------
+# 3×3 Board — Initial Piece Layout  (edit THIS to change the 3×3 setup)
+# ---------------------------------------------------------------------------
+# Each entry: (row, col, color, piece_type)
+#
+# Colors:      "WHITE", "BLACK"
+# Piece types: "PAWN", "ROOK", "KNIGHT", "BISHOP", "QUEEN", "KING"
+#
+# The 3×3 grid coordinates:
+#       col 0  | col 1  | col 2
+#   row 0  (0,0) | (0,1) | (0,2)
+#   row 1  (1,0) | (1,1) | (1,2)
+#   row 2  (2,0) | (2,1) | (2,2)
+#
+# Examples:
+#   To move the black pawn to top-right:
+#       (0, 2, "BLACK", "PAWN"),
+#   To add a white knight at (2, 0):
+#       (2, 0, "WHITE", "KNIGHT"),
+# ---------------------------------------------------------------------------
+
+INITIAL_PIECES_3x3: list[tuple[int, int, str, str]] = [
+    (2, 1, "WHITE", "KNIGHT"),   # White pawn at bottom-center
+    (0, 0, "BLACK", "PAWN"),   # Black pawn at top-left
+]
+"""Piece layout for the 3×3 research prototype board.
+Modify this list to change positions, add pieces, or remove pieces."""
+
+# ---------------------------------------------------------------------------
 # Quantum simulation
 # ---------------------------------------------------------------------------
 

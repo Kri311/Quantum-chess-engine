@@ -2,8 +2,8 @@
 Piece factory functions.
 
 Provides helpers that create the initial piece layout for a given board
-size.  The 3×3 prototype places one white pawn on the bottom-centre
-square and one black pawn on the top-centre square.
+size.  The 3×3 prototype reads its layout from ``config.INITIAL_PIECES_3x3``
+so that positions and piece types can be changed without editing source code.
 """
 
 from __future__ import annotations
@@ -20,9 +20,8 @@ def create_initial_pieces(
 ) -> dict[Position, Piece]:
     """Create the starting piece layout.
 
-    For the 3×3 board:
-        * White pawn at ``(2, 1)`` — bottom-centre.
-        * Black pawn at ``(0, 1)`` — top-centre.
+    For the 3×3 board the layout is read from ``config.INITIAL_PIECES_3x3``.
+    Edit that list to change positions, add or remove pieces.
 
     Args:
         board_size: Side length.  Defaults to ``config.BOARD_SIZE``.
@@ -38,10 +37,12 @@ def create_initial_pieces(
     pieces: dict[Position, Piece] = {}
 
     if size == 3:
-        # Research prototype layout: Pawns offset to allow captures/movement
-        # instead of immediately blocking each other.
-        pieces[Position(row=size - 1, col=1)] = white_pawn  # (2, 1)
-        pieces[Position(row=0, col=0)] = black_pawn         # (0, 0)
+        # Read layout from the global config — edit config.INITIAL_PIECES_3x3
+        # to change positions, add pieces, or remove pieces.
+        for row, col, color_name, type_name in config.INITIAL_PIECES_3x3:
+            color = Color[color_name]
+            ptype = PieceType[type_name]
+            pieces[Position(row=row, col=col)] = Piece(color=color, piece_type=ptype)
     else:
         # Generic layout: full row of pawns for each side.
         for col in range(size):
