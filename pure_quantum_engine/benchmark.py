@@ -31,9 +31,9 @@ def run_benchmark() -> None:
     # 1. Setup Standard 3x3 Test Scenario
     board = Board(size=3)
     board.place_piece(Position(2, 1), Piece(Color.WHITE, PieceType.PAWN))
-    board.place_piece(Position(0, 1), Piece(Color.BLACK, PieceType.PAWN))
+    board.place_piece(Position(0, 2), Piece(Color.BLACK, PieceType.PAWN))
     state = GameState(board=board, current_turn=Color.WHITE)
-    move = Move(start=Position(2, 1), end=Position(1, 1))
+    move = Move(start=Position(0, 0), end=Position(1, 1))
 
     sim = QuantumSimulator(shots=1024)
 

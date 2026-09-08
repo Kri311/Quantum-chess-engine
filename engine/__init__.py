@@ -1,7 +1,5 @@
 """
 engine — Classical chess-engine package for the Quantum Chess Engine project.
-
-Exports the public API surface used by the rest of the application.
 """
 
 from engine.constants import Color, PieceType, Direction
