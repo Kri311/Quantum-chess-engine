@@ -33,7 +33,7 @@ def generate_circuit_diagram(board_size: int, is_pure: bool) -> None:
     board = Board(size=board_size)
     if board_size == 3:
         board.place_piece(Position(2, 1), Piece(Color.WHITE, PieceType.PAWN))
-        board.place_piece(Position(0, 0), Piece(Color.BLACK, PieceType.PAWN))
+        board.place_piece(Position(0, 2), Piece(Color.BLACK, PieceType.PAWN))
         source, target = Position(2, 1), Position(1, 1)
     else:
         # 8x8 knight move
@@ -161,7 +161,7 @@ def main() -> None:
                 print("Exiting...")
                 sys.exit(0)
             else:
-                print("Invalid choice, please try again.")
+                print("Invalid choice, please try a2gain.")
         except KeyboardInterrupt:
             print("\nExiting...")
             sys.exit(0)

@@ -17,7 +17,7 @@ def main() -> None:
     # 1. Create a game state with white at (2,1) and black at (0,1)
     board = Board(size=3)
     board.place_piece(Position(2, 1), Piece(Color.WHITE, PieceType.PAWN))
-    board.place_piece(Position(0, 1), Piece(Color.BLACK, PieceType.PAWN))
+    board.place_piece(Position(0, 2), Piece(Color.BLACK, PieceType.PAWN))
     state = GameState(board=board, current_turn=Color.WHITE)
 
     # 2. Build the Grover search circuit

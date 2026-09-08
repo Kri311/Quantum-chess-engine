@@ -123,7 +123,7 @@ class TestEvaluatorIntegration:
     def test_white_promotion_wins(self) -> None:
         """White reaching row 0 gives a large positive score."""
         board = Board(size=3)
-        board.place_piece(Position(0, 1), Piece(Color.WHITE, PieceType.PAWN))
+        board.place_piece(Position(0, 2), Piece(Color.WHITE, PieceType.PAWN))
         board.place_piece(Position(2, 0), Piece(Color.BLACK, PieceType.PAWN))
         state = GameState(board=board)
         score = Evaluator.evaluate(state)
@@ -133,7 +133,7 @@ class TestEvaluatorIntegration:
         """Black reaching last row gives a large negative score."""
         board = Board(size=3)
         board.place_piece(Position(2, 0), Piece(Color.WHITE, PieceType.PAWN))
-        board.place_piece(Position(2, 1), Piece(Color.BLACK, PieceType.PAWN))
+        board.place_piece(Position(2, 2), Piece(Color.BLACK, PieceType.PAWN))
         state = GameState(board=board)
         score = Evaluator.evaluate(state)
         assert score < -50.0
