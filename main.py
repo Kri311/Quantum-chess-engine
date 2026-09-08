@@ -32,9 +32,17 @@ def generate_circuit_diagram(board_size: int, is_pure: bool) -> None:
     
     board = Board(size=board_size)
     if board_size == 3:
-        board.place_piece(Position(2, 1), Piece(Color.WHITE, PieceType.PAWN))
-        board.place_piece(Position(0, 2), Piece(Color.BLACK, PieceType.PAWN))
-        source, target = Position(2, 1), Position(1, 1)
+        # Read layout from the same global config used by the game
+        for row, col, color_name, type_name in config.INITIAL_PIECES_3x3:
+            c = Color[color_name]
+            pt = PieceType[type_name]
+            board.place_piece(Position(row, col), Piece(c, pt))
+        # Use the first entry as the source piece for the demo circuit
+        first = config.INITIAL_PIECES_3x3[0]
+        source = Position(first[0], first[1])
+        # Target is one row forward (row - 1 for WHITE, row + 1 for BLACK)
+        fwd = -1 if first[2] == "WHITE" else 1
+        target = Position(first[0] + fwd, first[1])
     else:
         # 8x8 knight move
         board.place_piece(Position(7, 6), Piece(Color.WHITE, PieceType.KNIGHT))
