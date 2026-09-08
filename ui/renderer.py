@@ -225,14 +225,14 @@ class BoardRenderer:
         """
         radius = self.cell_size // 3
 
-        # Map PieceType to character
+        # Map PieceType to Unicode chess shapes
         char_map = {
-            "PAWN": "P",
-            "KNIGHT": "N",
-            "BISHOP": "B",
-            "ROOK": "R",
-            "QUEEN": "Q",
-            "KING": "K"
+            "PAWN": "♟",
+            "KNIGHT": "♞",
+            "BISHOP": "♝",
+            "ROOK": "♜",
+            "QUEEN": "♛",
+            "KING": "♚"
         }
         label = char_map.get(piece_type.name, "?")
 
