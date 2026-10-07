@@ -44,6 +44,24 @@ INITIAL_PIECES_3x3: list[tuple[int, int, str, str]] = [
 Modify this list to change positions, add pieces, or remove pieces."""
 
 # ---------------------------------------------------------------------------
+# 2×2 Board — Initial Piece Layout  (minimal demo for circuit explanation)
+# ---------------------------------------------------------------------------
+# The 2×2 grid coordinates:
+#       col 0  | col 1
+#   row 0  (0,0) | (0,1)
+#   row 1  (1,0) | (1,1)
+#
+# This minimal layout uses a single Black Pawn to demonstrate how the
+# quantum circuit encodes, extracts, and transforms piece state.
+# ---------------------------------------------------------------------------
+
+INITIAL_PIECES_2x2: list[tuple[int, int, str, str]] = [
+    (0, 0, "BLACK", "PAWN"),    # Black pawn at top-left
+]
+"""Piece layout for the 2×2 quantum circuit demonstration.
+Single piece to produce the simplest possible circuit for gate-level explanation."""
+
+# ---------------------------------------------------------------------------
 # Quantum simulation
 # ---------------------------------------------------------------------------
 

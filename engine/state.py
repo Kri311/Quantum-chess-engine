@@ -104,8 +104,9 @@ class GameState:
             True for _ in self.board.pieces_by_color(Color.BLACK)
         )
 
-        if not white_alive or not black_alive:
-            return True
+        if self.board.size != 2:
+            if not white_alive or not black_alive:
+                return True
 
         # Check promotion: white reaches row 0, black reaches last row.
         for pos, piece in self.board.pieces_by_color(Color.WHITE):
