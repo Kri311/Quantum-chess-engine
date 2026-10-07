@@ -45,8 +45,10 @@ class PureQuantumRegisters:
         axis_bits = math.ceil(math.log2(self.board_size)) if self.board_size > 1 else 1
         self.coord_bits = max(4, axis_bits * 2)
 
-        # 8x8 uses 6-bit sparse status encoding from the paper to reach exactly 33 qubits
-        self.status_bits = 6 if self.board_size == 8 else 3
+        # Boards with ≥5 squares per axis need 6-bit sparse encoding to represent
+        # full piece diversity (Color + P/N/B/R/Q); smaller boards use 3-bit compact.
+        # This generalises the paper's encoding: 2×2, 3×3, 4×4 → 3 bits; 5×5+ → 6 bits.
+        self.status_bits = 6 if self.board_size >= 5 else 3
 
         self.current_square = QuantumRegister(self.coord_bits, "cur")
         self.target_square = QuantumRegister(self.coord_bits, "tgt")
