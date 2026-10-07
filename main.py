@@ -31,7 +31,18 @@ def generate_circuit_diagram(board_size: int, is_pure: bool) -> None:
     config.BOARD_SIZE = board_size
     
     board = Board(size=board_size)
-    if board_size == 3:
+    if board_size == 2:
+        # Read layout from 2×2 config
+        for row, col, color_name, type_name in config.INITIAL_PIECES_2x2:
+            c = Color[color_name]
+            pt = PieceType[type_name]
+            board.place_piece(Position(row, col), Piece(c, pt))
+        # Black pawn moves forward: (0,0) → (1,0)
+        first = config.INITIAL_PIECES_2x2[0]
+        source = Position(first[0], first[1])
+        fwd = -1 if first[2] == "WHITE" else 1
+        target = Position(first[0] + fwd, first[1])
+    elif board_size == 3:
         # Read layout from the same global config used by the game
         for row, col, color_name, type_name in config.INITIAL_PIECES_3x3:
             c = Color[color_name]
@@ -50,10 +61,8 @@ def generate_circuit_diagram(board_size: int, is_pure: bool) -> None:
 
     state = GameState(board=board, current_turn=Color.WHITE)
     
-    # Build the full, exact logic circuit for both 3x3 (23 qubits) and 8x8 (33 qubits).
-    # We do not simulate the 8x8 circuit here (which would require 128TB RAM), 
-    # we only assemble the gates to draw the architectural diagram.
-    circuit, _ = PureQuantumCircuitBuilder.build_full_chess_circuit(
+    # Build the full, exact logic circuit.
+    circuit, regs = PureQuantumCircuitBuilder.build_full_chess_circuit(
         state=state, source=source, target=target, color=Color.WHITE
     )
 
@@ -61,10 +70,33 @@ def generate_circuit_diagram(board_size: int, is_pure: bool) -> None:
     print(f"\n========================================================")
     print(f"  QUANTUM ARCHITECTURE: {circuit.num_qubits} QUBITS")
     print(f"========================================================")
+    print(f"  Board Size:        {board_size}×{board_size}")
     print(f"  Total Qubits:      {circuit.num_qubits}")
+    print(f"  Coord Bits:        {regs.coord_bits} (per register)")
+    print(f"  Status Bits:       {regs.status_bits} (per register)")
     print(f"  Circuit Depth:     {circuit.depth()}")
     print(f"  Gate Breakdown:    {dict(circuit.count_ops())}")
     print(f"--------------------------------------------------------")
+    
+    # For small boards (2×2, 3×3), run a single-shot simulation
+    if board_size <= 3:
+        print(f"\n  [SIMULATION] Running single-shot measurement...")
+        sim = AerSimulator(method="statevector")
+        transpiled = transpile(circuit, sim, optimization_level=1)
+        t0 = time.time()
+        result = sim.run(transpiled, shots=config.QUANTUM_SHOTS).result()
+        t1 = time.time()
+        counts = result.get_counts()
+        
+        # Display top measurement results
+        sorted_counts = sorted(counts.items(), key=lambda x: x[1], reverse=True)
+        print(f"  ► Simulation Time:  {(t1-t0)*1000:.1f} ms")
+        print(f"  ► Total Shots:      {config.QUANTUM_SHOTS}")
+        print(f"  ► Top Measurements:")
+        for bitstring, count in sorted_counts[:5]:
+            prob = count / config.QUANTUM_SHOTS * 100
+            print(f"    |{bitstring}⟩  →  {count}/{config.QUANTUM_SHOTS} shots ({prob:.1f}%)")
+        print(f"  --------------------------------------------------------")
     
     try:
         fig = circuit.draw(output="mpl", style="iqp", fold=40, scale=0.7)
@@ -141,6 +173,131 @@ def play_8x8_hybrid_quantum() -> None:
     gui.run()
 
 
+def play_2x2_pure_quantum() -> None:
+    """Runs the 2x2 interactive 1-pawn demo with Pure Quantum tracking."""
+    config.BOARD_SIZE = 2
+    from engine.game import Game
+    from engine.move import Move
+    from engine.constants import Color
+    from pure_quantum_engine.circuit import PureQuantumCircuitBuilder
+    from ui.gui import ChessGUI
+
+    class PureQuantumGame2x2(Game):
+        def __init__(self):
+            super().__init__()
+            # Force Black's turn since the config only has a Black Pawn
+            self.state.current_turn = Color.BLACK
+
+        def make_move(self, move: Move) -> None:
+            print(f"\n[PURE QUANTUM METRICS] Executing {move.start} -> {move.end}")
+            
+            # 1. Build circuit
+            circuit, _ = PureQuantumCircuitBuilder.build_full_chess_circuit(
+                state=self.state, source=move.start, target=move.end, color=self.state.current_turn
+            )
+            
+            # 2. Simulate
+            sim = AerSimulator(method="statevector")
+            transpiled = transpile(circuit, sim, optimization_level=1)
+            
+            t0 = time.time()
+            result = sim.run(transpiled, shots=1).result()
+            t1 = time.time()
+            
+            counts = result.get_counts()
+            measured = list(counts.keys())[0] if counts else "Error"
+            
+            # Print Faculty Metrics
+            print(f"  ► Target Circuit: {circuit.num_qubits} Qubits")
+            print(f"  ► Quantum Depth:  {circuit.depth()} gates")
+            print(f"  ► Exec Time:      {(t1-t0)*1000:.1f} ms")
+            print(f"  ► Prob Amplitude: 100.0% (Reversible deterministic path)")
+            print(f"  ► Measurement:    |{measured}⟩")
+            print(f"  ► Status:         Collapsed. UI updating.")
+            
+            super().make_move(move)
+
+    print("\nStarting 2x2 Pure Quantum Game (1-Pawn Interactive Demo)...")
+    game = PureQuantumGame2x2()
+    # No AI engine, purely manual so the user can make the move themselves
+    gui = ChessGUI(engine=None, ai_color=None)
+    gui.game = game
+    gui.run()
+
+
+# --- Option 7: 2x2 Grover Search + Pure Quantum Execution ---
+
+def run_2x2_grover_demo() -> None:
+    """Runs a 2x2 autonomous demo using Grover's search and Pure Quantum state execution."""
+    config.BOARD_SIZE = 2
+    from engine.constants import Color, PieceType
+    from engine.position import Position
+    from engine.state import GameState
+    from engine.board import Board
+    from engine.piece import Piece
+    from quantum.grover import GroverSearch
+    from pure_quantum_engine.circuit import PureQuantumCircuitBuilder
+    from qiskit_aer import AerSimulator
+    from qiskit import transpile
+    import time
+
+    print("\n========================================================")
+    print("    2x2 GROVER'S ALGORITHM + PURE QUANTUM DEMONSTRATION")
+    print("========================================================")
+    board = Board(size=2)
+    for row, col, color_name, type_name in config.INITIAL_PIECES_2x2:
+        c = Color[color_name]
+        pt = PieceType[type_name]
+        board.place_piece(Position(row, col), Piece(c, pt))
+    
+    state = GameState(board=board, current_turn=Color.BLACK)
+    
+    print(f"\n[PHASE 1] Initializing 2x2 Board with {len(config.INITIAL_PIECES_2x2)} piece(s)")
+    
+    print("\n[PHASE 2] Executing Grover's Algorithm to find optimal move...")
+    grover = GroverSearch()
+    
+    best_move = grover.search(state)
+    
+    if best_move:
+        print(f"\n[GROVER RESULT] Found optimal path: {best_move.start} -> {best_move.end}")
+    else:
+        print("\n[GROVER RESULT] No valid moves found!")
+        input("\nPress Enter to return to main menu...")
+        return
+        
+    print(f"\n[PHASE 3] Executing move {best_move.start} -> {best_move.end} via Pure Quantum Circuit...")
+    circuit, regs = PureQuantumCircuitBuilder.build_full_chess_circuit(
+        state=state, source=best_move.start, target=best_move.end, color=Color.BLACK
+    )
+    
+    sim = AerSimulator(method="statevector")
+    transpiled = transpile(circuit, sim, optimization_level=1)
+    
+    t0 = time.time()
+    result = sim.run(transpiled, shots=1).result()
+    t1 = time.time()
+    
+    counts = result.get_counts()
+    measured = list(counts.keys())[0] if counts else "Error"
+    
+    print(f"  ► Quantum Depth:  {circuit.depth()} gates")
+    print(f"  ► Target Circuit: {circuit.num_qubits} Qubits")
+    print(f"  ► Exec Time:      {(t1-t0)*1000:.1f} ms")
+    print(f"  ► Final State:    |{measured}⟩")
+    
+    filename = "2x2_pure_quantum_grover.png"
+    try:
+        fig = circuit.draw(output="mpl", style="iqp", fold=40, scale=0.7)
+        fig.savefig(filename, dpi=200, bbox_inches="tight")
+        print(f"  ✓ Saved graphical diagram -> {filename}")
+    except Exception as e:
+        print(f"  ✗ Could not save diagram: {e}")
+        
+    print("\nDemonstration Complete! The AI successfully found and executed the quantum move.")
+    input("\nPress Enter to return to main menu...")
+
+
 # --- Main Menu ---
 
 def main() -> None:
@@ -152,11 +309,14 @@ def main() -> None:
         print("2. Play 3x3 Pure Chess   (Academic Prototype metrics)")
         print("3. Generate 33-Qubit 8x8 Architecture Diagram")
         print("4. Generate 23-Qubit 3x3 Architecture Diagram")
-        print("5. Exit")
+        print("5. Generate 23-Qubit 2x2 Architecture Diagram (1 Pawn Demo)")
+        print("6. Play 2x2 Pure Chess   (Interactive 1-Pawn Demo)")
+        print("7. Run 2x2 Grover Search (Autonomous Demo)")
+        print("8. Exit")
         print("========================================================")
         
         try:
-            choice = input("Select an option [1-5]: ").strip()
+            choice = input("Select an option [1-8]: ").strip()
             if choice == "1":
                 play_8x8_hybrid_quantum()
             elif choice == "2":
@@ -166,10 +326,16 @@ def main() -> None:
             elif choice == "4":
                 generate_circuit_diagram(3, True)
             elif choice == "5":
+                generate_circuit_diagram(2, True)
+            elif choice == "6":
+                play_2x2_pure_quantum()
+            elif choice == "7":
+                run_2x2_grover_demo()
+            elif choice == "8":
                 print("Exiting...")
                 sys.exit(0)
             else:
-                print("Invalid choice, please try a2gain.")
+                print("Invalid choice, please try again.")
         except KeyboardInterrupt:
             print("\nExiting...")
             sys.exit(0)

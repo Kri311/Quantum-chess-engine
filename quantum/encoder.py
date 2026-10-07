@@ -66,6 +66,9 @@ class BoardEncoder:
         """
         size = board_size if board_size is not None else config.BOARD_SIZE
         axis_bits = math.ceil(math.log2(size)) if size > 1 else 1
+        # Match the register minimum: coord_bits = max(4, axis_bits*2),
+        # so each axis needs at least 2 bits.
+        axis_bits = max(2, axis_bits)
 
         col_bin = format(position.col, f"0{axis_bits}b")
         row_bin = format(position.row, f"0{axis_bits}b")
@@ -88,6 +91,7 @@ class BoardEncoder:
         """
         size = board_size if board_size is not None else config.BOARD_SIZE
         axis_bits = math.ceil(math.log2(size)) if size > 1 else 1
+        axis_bits = max(2, axis_bits)
 
         col_str = bitstring[:axis_bits]
         row_str = bitstring[axis_bits: 2 * axis_bits]
