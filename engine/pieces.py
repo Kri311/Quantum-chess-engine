@@ -43,6 +43,12 @@ def create_initial_pieces(
             color = Color[color_name]
             ptype = PieceType[type_name]
             pieces[Position(row=row, col=col)] = Piece(color=color, piece_type=ptype)
+    elif size == 2:
+        # Read layout from the 2x2 config for the 1-pawn demo
+        for row, col, color_name, type_name in config.INITIAL_PIECES_2x2:
+            color = Color[color_name]
+            ptype = PieceType[type_name]
+            pieces[Position(row=row, col=col)] = Piece(color=color, piece_type=ptype)
     else:
         # Generic layout: full row of pawns for each side.
         for col in range(size):
