@@ -276,7 +276,6 @@ The README summarizes the project. The following files provide the full technica
 | [Quantum design notes](docs/quantum_design.md) | Quantum design concepts and encoding notes. |
 | [Circuit design notes](docs/circuit_design.md) | Circuit subcomponents and gate-level design reference. |
 | [2×2 circuit architecture notes](docs/2x2_qc_architecture.md) | Focused minimal-board architecture reference. |
-| [Slide deck](outputs/Quantum_Chess_Project/Quantum_Chess_Project_Presentation.pptx) | Faculty presentation. |
 | [Editable project report](outputs/Quantum_Chess_Project/Quantum_Chess_Project_Report.docx) and [PDF report](outputs/Quantum_Chess_Project/Quantum_Chess_Project_Report.pdf) | Formatted copies of the project report. |
 
 ## Limitations and interpretation
