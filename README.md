@@ -51,8 +51,15 @@ quantum-chess-engine/
 |   |-- gui.py               Event loop and interaction handling
 |
 |-- tests/                   Pytest test suite
-|-- docs/                    Technical documentation
+|-- docs/                    Technical documentation and project artifacts
+|   |-- assets/diagrams/     Circuit and architecture diagrams
+|   |-- circuits/            Saved ASCII circuit dumps
+|   |-- reports/             Faculty reports and folder map
+|-- evaluation/              Move-quality evaluation script and plot
+|-- tools/                   Circuit inspection utilities
 ```
+
+For a file-by-file guide to the repository, see [`docs/reports/folder_dir.md`](docs/reports/folder_dir.md).
 
 ### Data Flow
 

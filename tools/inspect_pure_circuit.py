@@ -1,9 +1,16 @@
 """
 Circuit Inspection Script for Pure Quantum Engine.
 
-Builds and displays the ASCII representation and saves an image of the
-19-qubit pure quantum circuit generated for move verification and state update.
+Builds and displays a board-size-dependent pure circuit, then saves its
+ASCII representation and image under the documentation artifact folders.
 """
+
+from pathlib import Path
+import sys
+
+# Make package imports work when this utility is launched from any directory.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from engine.board import Board
 from engine.constants import Color, PieceType
@@ -21,7 +28,7 @@ def main() -> None:
     state = GameState(board=board, current_turn=Color.WHITE)
 
     # 2. Build the pure quantum circuit for a move
-    print("Building 19-qubit pure quantum circuit...")
+    print("Building pure quantum circuit for the 8x8 knight example...")
     circuit, regs = PureQuantumCircuitBuilder.build_full_chess_circuit(
         state, source, target, Color.WHITE
     )
@@ -37,14 +44,21 @@ def main() -> None:
     print("-" * 60)
 
     # 4. Save the circuit as a text file for easier viewing (since it's very large)
-    with open("pure_circuit.txt", "w") as f:
+    circuit_dir = PROJECT_ROOT / "docs" / "circuits"
+    diagram_dir = PROJECT_ROOT / "docs" / "assets" / "diagrams"
+    circuit_dir.mkdir(parents=True, exist_ok=True)
+    diagram_dir.mkdir(parents=True, exist_ok=True)
+
+    text_path = circuit_dir / "pure_circuit.txt"
+    with text_path.open("w") as f:
         f.write(str(circuit.draw(fold=-1)))
-    print("Saved full ASCII circuit diagram to 'pure_circuit.txt'.")
+    print(f"Saved full ASCII circuit diagram to '{text_path}'.")
     
     # 5. Optionally try to save as an image if matplotlib is installed
     try:
-        circuit.draw(output="mpl", filename="with_knight.png", style="iqp", fold=-1)
-        print("Saved graphical circuit diagram to 'with_knight.png'.")
+        image_path = diagram_dir / "with_knight.png"
+        circuit.draw(output="mpl", filename=str(image_path), style="iqp", fold=-1)
+        print(f"Saved graphical circuit diagram to '{image_path}'.")
     except Exception as e:
         print(f"Could not save graphical diagram (matplotlib may not be installed): {e}")
 

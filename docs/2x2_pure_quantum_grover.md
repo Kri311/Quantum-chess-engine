@@ -94,5 +94,4 @@ In Option 7 of `main.py`, you are watching both of these systems work in perfect
 
 ## 5. Circuit Diagram
 
-When you run Option 7 in `main.py`, the engine automatically generates and saves the full 23-qubit execution circuit diagram as `2x2_pure_quantum_grover.png` in your project root. 
-
+When you run Option 7 in `main.py`, the engine generates the 23-qubit execution circuit diagram at `docs/assets/diagrams/architecture_2x2.png`. This is the shared 2×2 circuit artifact used by the architecture-diagram mode as well.

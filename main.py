@@ -10,10 +10,14 @@ from __future__ import annotations
 import sys
 import time
 import math
+from pathlib import Path
 
 import config
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
 from qiskit_aer import AerSimulator
+
+PROJECT_ROOT = Path(__file__).resolve().parent
+DIAGRAM_DIR = PROJECT_ROOT / "docs" / "assets" / "diagrams"
 
 # --- Option 3/4: Circuit Generators ---
 
@@ -66,7 +70,8 @@ def generate_circuit_diagram(board_size: int, is_pure: bool) -> None:
         state=state, source=source, target=target, color=Color.WHITE
     )
 
-    filename = f"architecture_{board_size}x{board_size}.png"
+    DIAGRAM_DIR.mkdir(parents=True, exist_ok=True)
+    filename = DIAGRAM_DIR / f"architecture_{board_size}x{board_size}.png"
     print(f"\n========================================================")
     print(f"  QUANTUM ARCHITECTURE: {circuit.num_qubits} QUBITS")
     print(f"========================================================")
@@ -286,7 +291,8 @@ def run_2x2_grover_demo() -> None:
     print(f"  ► Exec Time:      {(t1-t0)*1000:.1f} ms")
     print(f"  ► Final State:    |{measured}⟩")
     
-    filename = "2x2_pure_quantum_grover.png"
+    DIAGRAM_DIR.mkdir(parents=True, exist_ok=True)
+    filename = DIAGRAM_DIR / "architecture_2x2.png"
     try:
         fig = circuit.draw(output="mpl", style="iqp", fold=40, scale=0.7)
         fig.savefig(filename, dpi=200, bbox_inches="tight")

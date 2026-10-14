@@ -366,4 +366,4 @@ for row in range(board.size):           # Iterates board dimensions
 
 ## 9. Circuit Diagram
 
-The full quantum circuit diagram has been saved as `architecture_2x2.png` in the project root and `docs/` directory. Run menu option 5 from `main.py` to regenerate it.
+The full quantum circuit diagram is stored at `docs/assets/diagrams/architecture_2x2.png`. Run menu option 5 from `main.py` to regenerate it.
