@@ -55,11 +55,19 @@ quantum-chess-engine/
 |   |-- assets/diagrams/     Circuit and architecture diagrams
 |   |-- circuits/            Saved ASCII circuit dumps
 |   |-- reports/             Faculty reports and folder map
-|-- evaluation/              Move-quality evaluation script and plot
+|-- evaluation/              Runtime/resource comparison script and plot
 |-- tools/                   Circuit inspection utilities
 ```
 
 For a file-by-file guide to the repository, see [`docs/reports/folder_dir.md`](docs/reports/folder_dir.md).
+
+### 3×3 Classical and Quantum-Assisted Comparison
+
+```bash
+python evaluation/compare_3x3_systems.py
+```
+
+This benchmark compares the 3×3 classical selector, the 3×3 pure-circuit move-processing demo, and the 3×3 hybrid quantum-classical selector. It reports average execution time, extra peak RAM, legal-move count, and circuit qubits, gates, and depth. The graph puts systems on the x-axis and uses a separate y-axis metric panel for each measurement. It writes the plot and CSV results under `evaluation/results/` and the faculty-facing report to `docs/reports/3x3_system_comparison.md`. The pure circuit processes a supplied move, and the hybrid path prepares its candidates classically; these simulator results are not evidence of quantum speedup.
 
 ### Data Flow
 

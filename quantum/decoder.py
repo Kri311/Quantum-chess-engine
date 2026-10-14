@@ -102,7 +102,9 @@ class BoardDecoder:
             Integer move index.
         """
         relevant = bitstring[-n_move_qubits:]
-        return int(relevant[::-1], 2)
+        # Measurement strings are displayed c[n-1]...c[0], so this binary
+        # value already matches the original register integer.
+        return int(relevant, 2)
 
     @staticmethod
     def decode_board(

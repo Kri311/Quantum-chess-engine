@@ -116,7 +116,10 @@ class GroverSearch:
         print(f"  ► Status:         Collapsed. UI updating.")
 
         # Convert bitstring to move index.
-        move_index = int(best_bitstring[::-1], 2)  # Qiskit little-endian.
+        # Qiskit prints classical bits most-significant first. Because the
+        # circuit measures move[i] into result[i], parsing the printed string
+        # as binary yields the original integer move index.
+        move_index = int(best_bitstring, 2)
 
         if move_index < len(candidates) and move_index in target_indices:
             return candidates[move_index]
@@ -137,10 +140,17 @@ class GroverSearch:
             n_solutions: Number of marked (solution) items.
 
         Returns:
-            Optimal number of iterations (at least 1).
+            Approximate iteration count. Returns zero when the marked fraction
+            already exceeds one half, because another rotation can reduce the
+            success probability.
         """
         if n_solutions <= 0 or n_solutions >= n_total:
             return 1
+        # When marked states are already more than half the padded search
+        # space, even one Grover rotation can move probability away from the
+        # marked subspace. In that regime, measure the uniform state instead.
+        if 2 * n_solutions > n_total:
+            return 0
         return max(1, int(math.floor((math.pi / 4) * math.sqrt(n_total / n_solutions))))
 
     def _build_grover_circuit(

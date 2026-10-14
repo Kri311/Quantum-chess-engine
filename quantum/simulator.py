@@ -35,6 +35,8 @@ class QuantumSimulator:
         self,
         backend_name: str | None = None,
         shots: int | None = None,
+        noise_enabled: bool | None = None,
+        use_gpu: bool = True,
     ) -> None:
         """Initialise the simulator.
 
@@ -42,16 +44,34 @@ class QuantumSimulator:
             backend_name: Aer backend identifier. Defaults to
                 config.QUANTUM_BACKEND.
             shots: Number of shots. Defaults to config.QUANTUM_SHOTS.
+            noise_enabled: Override the configured noise setting. ``None``
+                uses ``config.QUANTUM_NOISE_ENABLED``.
+            use_gpu: Try the Aer GPU device when available; otherwise use CPU.
         """
         name = backend_name if backend_name is not None else config.QUANTUM_BACKEND
         self.shots: int = shots if shots is not None else config.QUANTUM_SHOTS
+        self.noise_enabled = (
+            getattr(config, "QUANTUM_NOISE_ENABLED", False)
+            if noise_enabled is None
+            else noise_enabled
+        )
         
         noise_model = None
-        if getattr(config, "QUANTUM_NOISE_ENABLED", False):
+        if self.noise_enabled:
             noise_model = self._build_noise_model()
             
         try:
-            self._backend = AerSimulator(method="statevector", noise_model=noise_model, device="GPU")
+            if use_gpu:
+                self._backend = AerSimulator(
+                    method="statevector",
+                    noise_model=noise_model,
+                    device="GPU",
+                )
+            else:
+                self._backend = AerSimulator(
+                    method="statevector",
+                    noise_model=noise_model,
+                )
         except Exception:
             self._backend = AerSimulator(noise_model=noise_model)
 
@@ -76,11 +96,16 @@ class QuantumSimulator:
         
         return noise_model
 
-    def run(self, circuit: QuantumCircuit) -> dict[str, int]:
+    def run(
+        self,
+        circuit: QuantumCircuit,
+        seed_simulator: int | None = None,
+    ) -> dict[str, int]:
         """Execute a circuit and return measurement counts.
 
         Args:
             circuit: The quantum circuit to execute.
+            seed_simulator: Optional Aer random seed for reproducible shots.
 
         Returns:
             Dictionary mapping bitstrings to their measurement counts.
@@ -89,17 +114,25 @@ class QuantumSimulator:
             circuit, basis_gates=_AER_BASIS_GATES, optimization_level=1,
         )
         try:
-            job = self._backend.run(transpiled, shots=self.shots)
+            job = self._backend.run(
+                transpiled,
+                shots=self.shots,
+                seed_simulator=seed_simulator,
+            )
             result = job.result()
         except RuntimeError as e:
-            if "GPU" in str(e):
+            if "GPU" in str(e).upper() or "CUDA" in str(e).upper():
                 print("GPU simulation failed, falling back to CPU...")
                 # Fallback to CPU backend
                 noise_model = None
-                if getattr(config, "QUANTUM_NOISE_ENABLED", False):
+                if self.noise_enabled:
                     noise_model = self._build_noise_model()
                 self._backend = AerSimulator(method="statevector", noise_model=noise_model)
-                job = self._backend.run(transpiled, shots=self.shots)
+                job = self._backend.run(
+                    transpiled,
+                    shots=self.shots,
+                    seed_simulator=seed_simulator,
+                )
                 result = job.result()
             else:
                 raise e
