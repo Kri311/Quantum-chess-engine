@@ -65,6 +65,7 @@ quantum_chess_engine/
 | File | Responsibility |
 |---|---|
 | `ai/__init__.py` | AI package initialization. |
+| `ai/classical_3x3.py` | 3×3 classical selector used by the system comparison. |
 | `ai/heuristic.py` | Classical position and per-move heuristic scoring. |
 | `ai/minimax.py` | Classical minimax search with alpha-beta pruning and move ordering. |
 | `ai/quantum_search.py` | Prepares heuristic-best legal-move indices and invokes Grover search; provides a classical fallback. |
@@ -146,6 +147,8 @@ These are saved architecture and Qiskit circuit images for reports, presentation
 |---|---|
 | `chess_engine_quantum.md` | Detailed architecture, encoding, gate, Grover, configuration, and limitation explanation for faculty. |
 | `ques_ans.md` | Faculty-style oral-exam question bank with answers and challenging prompts. |
+| `3x3_system_comparison.md` | Generated comparison of the classical, pure quantum, and hybrid 3×3 systems, with metric explanations and aggregate results. |
+| `project_implementation_report.md` | Combined faculty/team report covering architecture, configurations, gates, phases, results, run steps, and the Markdown documentation set. |
 | `folder_dir.md` | This file: a map of folder and file responsibilities. |
 
 ## Evaluation, tests, and utilities
@@ -154,8 +157,11 @@ These are saved architecture and Qiskit circuit images for reports, presentation
 
 | File | Responsibility |
 |---|---|
-| `evaluation/best_move.py` | Generates sample positions and compares move-selection quality across classical, hybrid, and baseline approaches. |
-| `evaluation/evaluation_plot.png` | Saved plot produced by the evaluation script. |
+| `evaluation/compare_3x3_systems.py` | Builds a deterministic 3×3 position set, measures classical, pure quantum, and hybrid systems, and writes CSV, PNG, and Markdown results. |
+| `evaluation/best_move.py` | Backward-compatible command that runs `compare_3x3_systems.py`. |
+| `evaluation/results/3x3_comparison.png` | Four metric panels with the three 3×3 systems on the x-axis and execution time, extra peak RAM, qubits, and gate count as separate y-axis metrics. |
+| `evaluation/results/3x3_comparison_summary.csv` | Aggregate metrics by 3×3 system. |
+| `evaluation/results/3x3_comparison_positions.csv` | Per-position legal-move count, execution time, extra peak RAM, and circuit resource measurements. |
 
 ### `tests/`
 
@@ -180,6 +186,14 @@ These are saved architecture and Qiskit circuit images for reports, presentation
 | `tools/inspect_circuit.py` | Builds and prints a small Grover circuit summary and ASCII drawing. |
 | `tools/inspect_pure_circuit.py` | Builds a pure-circuit example and saves its text and image outputs to `docs/circuits/` and `docs/assets/diagrams/`. |
 
+## Presentation and report outputs
+
+| Path | Responsibility |
+|---|---|
+| `outputs/Quantum_Chess_Project/Quantum_Chess_Project_Presentation.pptx` | Faculty presentation adapted to the supplied visual reference. |
+| `outputs/Quantum_Chess_Project/Quantum_Chess_Project_Report.docx` | Editable implementation report. |
+| `outputs/Quantum_Chess_Project/Quantum_Chess_Project_Report.pdf` | PDF reading/printing copy of the implementation report. |
+
 ## Local-only folders
 
 These can appear in a developer checkout but are not part of the source layout described above:
@@ -196,4 +210,5 @@ These can appear in a developer checkout but are not part of the source layout d
 - `python tools/inspect_circuit.py` prints a Grover circuit summary and diagram without creating an output file.
 - `python tools/inspect_pure_circuit.py` writes `docs/circuits/pure_circuit.txt` and `docs/assets/diagrams/with_knight.png`.
 - The 2×2 and 3×3 circuits can also be inspected in the saved artifacts under `docs/circuits/` and `docs/assets/diagrams/`.
-- `python evaluation/best_move.py` runs the move-quality evaluation and saves its plot to `evaluation/evaluation_plot.png`.
+- `python evaluation/compare_3x3_systems.py` runs the fixed 3×3 comparison and writes the plot and CSV tables to `evaluation/results/`, plus the faculty report to `docs/reports/3x3_system_comparison.md`.
+- `python evaluation/best_move.py` is a compatibility alias for the same comparison.

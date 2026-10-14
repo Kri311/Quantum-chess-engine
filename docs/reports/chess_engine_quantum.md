@@ -186,6 +186,10 @@ Typical entry point: `python main.py`. The menu has console/UI and demonstration
 | Board encoding and simulation | `quantum/encoder.py`, `quantum/decoder.py`, `quantum/simulator.py` |
 | Pure-circuit registers and gates | `pure_quantum_engine/registers.py`, `pure_quantum_engine/circuit.py`, `pure_quantum_engine/engine.py` |
 
+## 3×3 classical comparison
+
+The 3×3 system comparison is documented in [`3x3_system_comparison.md`](3x3_system_comparison.md). It compares classical move selection, pure-circuit processing of a supplied move, and the hybrid quantum-classical selector. It reports average execution time, extra peak RAM, legal-move count, qubits, gate count, and circuit depth. The pure circuit does not select a move autonomously, and the hybrid path prepares candidates classically; the measurements do not claim quantum speedup.
+
 ## Repository organization after cleanup
 
 The repository keeps implementation files in their existing package directories. Faculty reports are grouped in `docs/reports/`; diagrams are in `docs/assets/diagrams/`; ASCII circuit dumps are in `docs/circuits/`; evaluation code and its plot remain in `evaluation/`; and the circuit inspection utilities are in `tools/`. The 2×2 diagram had byte-identical copies, so one canonical diagram is retained at `docs/assets/diagrams/architecture_2x2.png`. Python bytecode and Pytest caches were removed as disposable output. The ignored `venv1/` environment and hidden workspace metadata were preserved. The path-producing scripts and references were updated to use the organized locations; chess rules and quantum algorithms were left unchanged. See [`folder_dir.md`](folder_dir.md) for the responsibility of every project file and folder.
