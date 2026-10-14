@@ -10,9 +10,11 @@ quantum_chess_engine/
 ├── docs/                       Design documents and project artifacts
 │   ├── assets/diagrams/        Architecture and circuit images
 │   ├── circuits/               Saved ASCII circuit diagrams
+│   ├── flowcharts/              Python-generated system flowcharts and sources
+│   │   └── generated/           Python-rendered PNG and SVG flowcharts
 │   └── reports/                Faculty reports and this file map
 ├── engine/                     Classical chess domain and rules
-├── evaluation/                 Move-quality evaluation experiment
+├── evaluation/                 3×3 runtime and circuit-resource comparison
 ├── pure_quantum_engine/        Coordinate/status circuit prototype
 ├── quantum/                    Encoding, Grover search, and simulation
 ├── tests/                      Automated checks for core behavior
@@ -115,7 +117,7 @@ quantum_chess_engine/
 | `docs/quantum_design.md` | Quantum design intent, encoding, oracle, and Grover discussion. |
 | `docs/circuit_design.md` | Register and gate-level design reference for the circuit prototype. |
 | `docs/2x2_qc_architecture.md` | Focused architectural explanation for the minimal 2×2 circuit scenario. |
-| `docs/2x2_pure_quantum_grover.md` | Walkthrough of the 2×2 Grover plus pure-circuit demonstration. |
+| `docs/2x2_pure_quantum_grover.md` | Detailed 2×2/3×3 gate and register walkthrough, separate Grover-index path, worked move-selection example, and classical/quantum responsibility split. |
 
 ### `docs/assets/diagrams/` — image artifacts
 
@@ -140,6 +142,26 @@ These are saved architecture and Qiskit circuit images for reports, presentation
 | `2x2_circuit.txt` | Saved ASCII circuit dump for the 2×2 demonstration. |
 | `pure_circuit.txt` | Full ASCII output produced by `tools/inspect_pure_circuit.py`. |
 | `pure_quantum_3x3_circuit.txt` | Saved ASCII dump for the 3×3 pure circuit. |
+
+### `docs/flowcharts/` — implementation flowcharts
+
+| File | Responsibility |
+|---|---|
+| `README.md` | Reading order, diagram scope, important behavior notes, and source-code locations. |
+| `00_project_overview.md` | Connects the application menu, shared chess core, AI, circuit paths, and benchmark outputs. |
+| `01_8x8_hybrid_game.md` | Shows human/AI turns, classical move preparation, Grover selection, fallback, and board update. |
+| `02_3x3_pure_game.md` | Shows the selected-move circuit path and classical minimax opponent/state update. |
+| `03_2x2_demonstrations.md` | Separately explains the interactive pawn route and the Grover-labelled autonomous route. |
+| `04_pure_circuit_builder.md` | Details register allocation, coordinate initialization, status lookup, gate stages, and readout. |
+| `05_3x3_benchmark.md` | Traces the classical, pure-circuit, and hybrid measurement branches to their result files. |
+| `06_circuit_diagram_generation.md` | Shows menu circuit-generation inputs, simulation choices, and saved image outputs. |
+| `generate_flowcharts.py` | Python/Matplotlib renderer for the six connected PNG and SVG flowcharts. |
+| `generated/01_complete_project_map.png` and `.svg` | Unified overview linking menu routes to the implementation lanes and outputs. |
+| `generated/02_gameplay_implementation_routes.png` and `.svg` | Rendered comparison of the 8×8, 3×3, and 2×2 play/demo routes. |
+| `generated/03_quantum_circuit_paths.png` and `.svg` | Rendered pure-circuit and hybrid Grover circuit workflows. |
+| `generated/04_3x3_benchmark_flow.png` and `.svg` | Rendered comparison pipeline from positions through metrics and result files. |
+| `generated/05_3x3_piece_to_best_move.png` and `.svg` | One connected 3×3 walkthrough from classical board and move indices through Grover sampling, the software Move handoff, and separate pure-circuit measurement. |
+| `generated/06_2x2_black_pawn_pure_quantum.png` and `.svg` | Interactive 2×2 Black Pawn example from board setup and move encoding through pure-circuit readout and classical state update. |
 
 ### `docs/reports/` — faculty reports and repository guide
 
