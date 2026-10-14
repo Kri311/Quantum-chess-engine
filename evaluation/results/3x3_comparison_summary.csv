@@ -1,0 +1,4 @@
+system,positions,average_legal_moves,average_execution_time_ms,average_peak_ram_mb,average_qubits,average_gates,average_circuit_depth
+3×3 Classical,4,2.25,1.1901204998139292,0.0068359375,N/A,N/A,N/A
+3×3 Pure Quantum,4,2.25,95.81478575091751,5.1923828125,23.0,102.0,32.25
+3×3 Hybrid Quantum-Classical,4,2.25,71.74088774991105,0.04296875,2.25,13.75,10.25
