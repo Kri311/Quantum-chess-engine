@@ -22,6 +22,18 @@ The script writes PNG and SVG copies under `docs/flowcharts/generated/`.
 - [3×3 evaluation flow (PNG)](generated/04_3x3_benchmark_flow.png) · [SVG](generated/04_3x3_benchmark_flow.svg)
 - [3×3 piece-to-index-to-circuit walkthrough (PNG)](generated/05_3x3_piece_to_best_move.png) · [SVG](generated/05_3x3_piece_to_best_move.svg)
 - [2×2 Black Pawn pure-circuit walkthrough (PNG)](generated/06_2x2_black_pawn_pure_quantum.png) · [SVG](generated/06_2x2_black_pawn_pure_quantum.svg)
+- [Classical, quantum, and hybrid implementation flow (PNG)](generated/07_approach_implementation_flow.png) · [SVG](generated/07_approach_implementation_flow.svg)
+- [Detailed 2×2, 3×3, and 8×8 implementation flows with configuration (PNG)](generated/08_detailed_system_implementation_flows.png) · [SVG](generated/08_detailed_system_implementation_flows.svg)
+- [2×2 quantum implementation and configuration (PNG)](generated/09_2x2_system_implementation.png) · [SVG](generated/09_2x2_system_implementation.svg)
+- [3×3 Minimax and circuit-trace implementation (PNG)](generated/10_3x3_system_implementation.png) · [SVG](generated/10_3x3_system_implementation.svg)
+- [8×8 hybrid Grover implementation and configuration (PNG)](generated/11_8x8_hybrid_system_implementation.png) · [SVG](generated/11_8x8_hybrid_system_implementation.svg)
+- [2×2 Grover search and move-circuit flow (PNG)](generated/12_2x2_grover_circuit_flow.png) · [SVG](generated/12_2x2_grover_circuit_flow.svg)
+
+The detailed 2×2 Grover/circuit flow is generated separately with:
+
+```bash
+python docs/flowcharts/generate_2x2_grover_circuit_flow.py
+```
 
 ## Reading order
 
