@@ -1,324 +1,234 @@
-# How the 2×2 Demonstration Works: A Gate-by-Gate Walkthrough
+# Explaining the 2×2 Quantum Chess Circuit and Grover Search
 
-This note follows the default 2×2 example in the repository from its initial board to the end of menu option 7. It explains which values are classical, which qubits and gates are created, how those gates act on the example state, and what the final measurement means.
+A faculty walkthrough of the circuit in [`architecture_2x2.png`](docs/assets/diagrams/architecture_2x2.png), followed by the separate Grover move-index search. The gate behavior below follows the current source code and the example used to generate this diagram.
 
-> **Important accuracy note:** The menu calls option 7 “2×2 Grover Search,” but the default board has exactly one legal move. The current `GroverSearch.search` returns that move before constructing a Grover circuit. The following 23-qubit circuit is then built and measured, but it does not determine or apply a new board state. The circuit's direction logic also fails to recognize this forward move. This is a useful circuit-construction example, not a completed quantum chess move engine.
+## First, the story in one minute
 
-## 1. The example and its route through the program
+The 2×2 board contains one Black Pawn at `(row 0, column 0)`. Classical Python finds its only legal move, `(0,0) -> (1,0)`. The 23-qubit circuit then encodes that known source and target, looks up their piece-status values, attempts to detect the move direction, and measures the registers.
 
-The board is 2 rows by 2 columns. Positions are written `(row, col)`, with row increasing downward:
+For this input, the source lookup works and the destination lookup correctly stays empty. The current direction circuit does **not** recognize this forward move: its equality test uses the row-bit slices, and the source and destination rows differ. The direction register therefore remains zero. The final controlled status gates do not fire, so the circuit is a diagnostic prototype and does not update a chessboard.
 
-```text
-             col 0       col 1
-row 0        (0,0)       (0,1)
-row 1        (1,0)       (1,1)
-```
+Grover's algorithm is a different circuit. In the hybrid search, classical code generates legal moves and scores them; Grover acts on their integer list indices. Its oracle phase-marks selected indices and its diffuser makes those phase differences interfere, which can raise the marked-index measurement probability for a suitable search size and iteration count.
 
-The default configuration contains one piece:
+<!-- pagebreak -->
+## Circuit overview: architecture_2x2.png
 
-| Square | Classical contents |
+![Current Qiskit circuit diagram for the 2×2 example](docs/assets/diagrams/architecture_2x2.png)
+
+*The circuit image is embedded at full source resolution. Zoom in to point to a wire or gate. Gate-sequence numbers in the walkthrough are zero-based operation positions from the builder; they are not printed in the image.*
+
+<!-- pagebreak -->
+## 1. Read the circuit picture
+
+The figure is a Qiskit circuit drawing. Read each horizontal wire from left to right: its state is carried forward and later gates act on that updated state. A gate does not pass a classical value down a pipe; the qubits jointly hold the circuit state. Qiskit may place gates on independent wires in the same visual column, so use both the wire labels and the ordered gate groups below.
+
+| Symbol in the figure | How to read it |
+|---|---|
+| Blue `X` square | Apply NOT to that wire: `0 ↔ 1`. |
+| Filled control dot joined to a target with `⊕` | A controlled-X. The target flips only when the control is 1. Several dots joined to one target make a multi-controlled X; every control must be 1. |
+| Gray meter symbol and vertical line to `meas` | Measure that qubit and write the result to a classical bit. Measurement is at the end of the computation. |
+| `cur`, `tgt`, `dir`, `src`, `dst`, `anc` wire names | Current/source coordinate, target coordinate, direction result, source/destination status, and scratch workspace. |
+| Small numbers on the `meas` line | Classical-bit destinations, not gate numbers, board coordinates, or move indices. |
+
+The diagram is folded to fit on a page. Gray measurement symbols can appear at different horizontal positions because Qiskit places a measurement after that wire’s last gate use; other wires may continue through later gates. They are still final readouts, not intermediate chess decisions. Read each quantum wire in sequence. The final measurement result is described after the gate trace.
+
+## 2. Inputs and the register map
+
+Coordinates are `(row, column)`, with rows increasing downward. The board at circuit-build time is:
+
+| Square | Contents |
 |---|---|
 | `(0,0)` | Black Pawn |
-| `(0,1)` | Empty |
-| `(1,0)` | Empty |
-| `(1,1)` | Empty |
+| `(0,1)`, `(1,0)`, `(1,1)` | Empty |
 
-The intended demonstration move is the Black Pawn stepping forward from `(0,0)` to `(1,0)`. The move generator and board are ordinary Python objects. The quantum circuit receives the already known source, target, and board; it is not given a quantum superposition of complete chess positions.
+The move was already selected classically: source `(0,0)` to target `(1,0)`. `BoardEncoder` writes column bits followed by row bits. With two bits per axis, the logical values are `(0,0) = 0000` and `(1,0) = 0001`. Qiskit qubit index 0 is the rightmost bit, so the target is loaded with `X(tgt[0])`.
 
-Menu option 7 in `main.py` performs these operations:
+| Register | Qubits | Starting / intended value | Role |
+|---|---:|---|---|
+| `cur[0..3]` | 4 | `0000` | Source coordinate |
+| `tgt[0..3]` | 4 | `0001` | Target coordinate |
+| `dir[0..3]` | 4 | `0000` | Move-direction workspace |
+| `src[0..2]` | 3 | `000` initially; lookup should make `001` | Source-square status |
+| `dst[0..2]` | 3 | `000` | Destination-square status |
+| `anc[0..4]` | 5 | `00000` | Temporary comparison / operation bits |
 
-1. Set the configured board size to 2 and construct the classical board and `GameState`.
-2. Call `GroverSearch.search(state)`.
-3. Pass the returned `Move` to `PureQuantumCircuitBuilder.build_full_chess_circuit`.
-4. Simulate that 23-qubit circuit for one shot and print the measured bit string.
-5. Save a circuit diagram and print a completion message.
+A Black Pawn is encoded as `001`; an empty square is `000`. The logical status string is printed most-significant bit first, so `src=001` means `src[0]=1`, with `src[1]=src[2]=0`. The encoding is a compact prototype, not a complete chess-board data structure.
 
-Option 7 does **not** call the game's `make_move` method or keep a post-move board. The interactive option 6 is a different route: a user selects a legal move, the diagnostic circuit is run, and then the classical game applies the supplied move.
+The 23 qubits are allocated as `4 + 4 + 4 + 3 + 3 + 5`. There is no register containing all four squares as a board that can be rewritten. The circuit receives the classical board and the chosen move as input data.
 
-## 2. First, the classical move list
+## 3. Follow the gates and their outputs
 
-The Black Pawn is at row 0. In this project, Black advances toward increasing row numbers. The next square `(1,0)` is on the board and empty, so the move generator returns:
+The operation numbers below identify the gate sequence produced by `PureQuantumCircuitBuilder`. For every controlled gate, the output keeps the control bits and flips only the target when all required controls are 1.
 
-```text
-candidates = [ Move((0,0) -> (1,0)) ]
-candidate count = 1
-```
+### A. Load the target coordinate - operation 0
 
-There is no second legal destination: moving diagonally would require an enemy piece to capture, but both diagonal destinations are empty. The two-square opening step is outside this 2-row board.
+`X(tgt[0])` changes `tgt[0]: 0 -> 1`. All other coordinate bits stay zero. The register now represents `cur=0000`, `tgt=0001`, which is the supplied move. There is no H gate here, so this is a definite basis-state input, not a superposition of moves.
 
-`GroverSearch.search` asks `MoveOracle` for candidates and legal candidate indices. Here there is one candidate and its index is 0, so every candidate is marked. The search method contains an early-return case for that situation:
+### B. Look up the source square - operations 1 to 9
 
-```python
-if len(target_indices) == n_candidates:
-    return candidates[target_indices[0]]
-```
+The source status extractor uses the classical board as a reversible lookup table. It processes the only occupied square, `(0,0)`, whose address is `0000` and status is `001`.
 
-Therefore, the current default run builds **no Grover circuit**. It applies no Grover Hadamard gates, no phase oracle, no diffuser, and no measurement of a move-index register. The method simply returns the one `Move` already produced by the classical move generator.
+| Operation(s) | Gate and wires | Input -> output | Why / what feeds forward |
+|---|---|---|---|
+| 1-4 | `X` on `cur[0]` through `cur[3]` | `cur: 0000 -> 1111` temporarily | MCX controls activate on 1. The X gates turn the all-zero address into the all-one match pattern. |
+| 5 | 4-control MCX: `cur[0..3]` controls, `src[0]` target | Controls are `1111`; `src[0]: 0 -> 1` | The address matches. The pawn status has its least-significant bit set, so that status bit is written to `src[0]`. |
+| 6-9 | Undo the four `cur` X gates | `cur: 1111 -> 0000`; `src` stays `001` | Uncomputes the temporary address pattern. The source coordinate is available unchanged for the next phase. |
 
-This is a key distinction: the following 23-qubit circuit is not the Grover search. It is a separate coordinate/status circuit built after the move has been supplied.
+The result is `src=001`: the circuit has copied the pawn's status into a register. The `src[0]` value is the output that later status logic can use as a control.
 
-## 3. The 23-qubit circuit registers
+### C. Look up the target square - operations 10 to 18
 
-For board size 2, `PureQuantumRegisters` allocates four coordinate qubits per square coordinate. Two bits per axis are enough to represent 0 or 1; the implementation keeps a minimum of four coordinate qubits even on this small board. It then allocates direction, source status, destination status, and scratch registers:
+The same occupied-square lookup is attempted on `tgt`. Operations 10-13 temporarily apply X to all four target bits. Since `tgt` starts as `0001`, it becomes `1110` in the qubit-control pattern. Operation 14 is a four-control MCX from `tgt[0..3]` to `dst[0]`. One control is 0, so it does not fire. Operations 15-18 undo the X gates and restore `tgt=0001`.
 
-| Register | Qubits | Intended role in the prototype |
-|---|---:|---|
-| `cur[0..3]` | 4 | Current/source coordinate |
-| `tgt[0..3]` | 4 | Target coordinate |
-| `dir[0..3]` | 4 | Direction-result workspace |
-| `src[0..2]` | 3 | Compact source-square status |
-| `dst[0..2]` | 3 | Compact target-square status |
-| `anc[0..4]` | 5 | Temporary work qubits |
-| **Total** | **23** | Each qubit is measured into a classical bit |
+Output: `dst` remains `000`, correctly representing an empty target at the time this circuit was built. The coordinate register is restored and feeds into the next computation.
 
-The code uses 23 qubits and a 23-bit classical readout register. Register names describe the design intent; they do not guarantee that every intended predicate is correctly computed.
+### D. Compare coordinates and attempt direction detection - operations 19 to 37
 
-### 3.1 Coordinate bit order
+This is the key limitation to explain while pointing at the direction wires. The coordinate string is column bits followed by row bits, but Qiskit stores the rightmost bits at the low qubit indices. Consequently, `cur[0:2]` and `tgt[0:2]` are the **row** bits in this encoding, even though the code names these slices `cur_x` and `tgt_x`.
 
-`BoardEncoder.encode_position` forms a logical string from the column bits followed by the row bits. With two bits allocated per axis:
+For this move the row values differ: source row 0 is `00`, target row 1 is `01`. In qubit-index order, `cur[0:2]=[0,0]`, `tgt[0:2]=[1,0]`.
 
-| Position `(row, col)` | Column bits + row bits | Logical coordinate string |
+| Operation(s) | Gate action and intermediate result | Output passed on |
 |---|---|---|
-| `(0,0)` | `00` + `00` | `0000` |
-| `(0,1)` | `01` + `00` | `0100` |
-| `(1,0)` | `00` + `01` | `0001` |
-| `(1,1)` | `01` + `01` | `0101` |
+| 19-22 | `CX(cur[0],tgt[0])`, `X(tgt[0])`, then the same pattern for bit 1. With controls 0, the temporary target comparison bits become `[0,1]`. | The two comparison controls do not both equal 1. |
+| 23 | CCX on the two temporary target bits, target `anc[0]` | Since the controls are `[0,1]`, it does not flip. `anc[0]` stays 0: the implemented equality test failed. |
+| 24-27 | Reverse the temporary compare with X/CX gates | `tgt` is restored to `0001`; the failed result remains `anc[0]=0`. |
+| 28-29 | CX from `anc[0]` to `dir[0]` and `dir[1]` | Control is 0, so neither direction bit changes. |
+| 30-33 | X/CCX/X checks a limited diagonal-left pattern and copies `anc[1]` to `dir[1]` | The CCX controls are not both 1. `anc[1]` and `dir[1]` stay 0. |
+| 34-37 | X/CCX/X checks a limited diagonal-right pattern and copies `anc[2]` to `dir[0]` | The CCX controls are not both 1. `anc[2]` and `dir[0]` stay 0. |
 
-Qiskit numbers a register's qubits from least significant (`q[0]`) upward. The initializer walks the logical string in reverse when deciding which qubit index to flip. Thus `0001` is prepared by applying X to `tgt[0]`; a logical `0100` would instead flip `tgt[2]`.
+Output: `dir=0000`, and `anc[0..2]=000`. The code is meant to set direction bits from comparison results, but this comparison does not implement a full row increment / column equality predicate. It misses the example's forward move. This is not a Grover failure; this is a limitation in the separate coordinate/status circuit.
 
-### 3.2 Piece-status bit order
+### E. Try the status transformation - operations 38 to 52
 
-For the compact three-bit status code, a Black Pawn is `001` and an empty square is `000`. Like the coordinate initializer, the status extractor maps the rightmost logical character to output qubit 0. Therefore the Black Pawn sets `src[0]` to 1; `src[1]` and `src[2]` remain 0. The target's three status qubits remain 0 because `(1,0)` is empty.
+The method called `_add_status_operator` attempts a conditional status change. It is not a full board update.
 
-These compact codes are not unique for every chess piece. They are an educational encoding for a small prototype, not a full chess-piece data format.
+1. Operations 38-40 apply X to `dst[0..2]`, changing `dst=000` to temporary `111`. This makes an originally empty destination recognizable to positive controls.
+2. Operations 41, 43, 44, 46, 47, and 49 are multi-controlled X gates. Each requires **all four `dir` bits**, all three complemented `dst` bits, and one `src` bit to equal 1; the target is scratch qubit `anc[2]`.
+3. Because `dir=0000`, the direction controls are false. None of these MCX gates fires, even though `src[0]=1` and temporary `dst=111` for the first status bit. The intervening CX gates (42, 45, 48) use `anc[2]=0`, so they do not change `dst`.
+4. Operations 50-52 undo the temporary destination X gates: `dst=111 -> 000`.
 
-## 4. Building the circuit, one stage at a time
+Output: `src=001`, `dst=000`, `dir=0000`, and the ancillas return to zero for this input. No piece is transferred. The source status is not cleared, there is no mutable board register, and no chess move is applied by this circuit.
 
-All 23 qubits start in `|0⟩`. The circuit builder then appends gates in this order: coordinate initialization, source and destination status lookup, direction logic, status-operator logic, and measurement.
+### F. Gate legend: input, action, output
 
-### Stage A: prepare the source coordinate
+| Gate | What goes in | What it does | What comes out / why it is used |
+|---|---|---|---|
+| X | One qubit, for example `tgt[0]=0` | Flips 0 to 1 or 1 to 0 | Here it loads target row bit 1 or temporarily flips zero-valued controls so MCX can test an address. Paired X gates restore temporary changes. |
+| CX | Control and target, for example `cur[0]=0`, `tgt[0]=1` | Target becomes `target XOR control` | A zero control leaves target 1; a one control flips it. Here CX participates in the temporary bit comparison and later copies a computed flag. |
+| CCX | Two controls and one target | Flips the target only if both controls are 1 | Here it combines comparison bits into an ancilla flag. In this example the tested patterns fail, so the ancillas remain 0. |
+| MCX | Several controls and one target | Flips the target only if every control is 1 | It writes the source status when the coordinate matches, checks the target address, and attempts the conditional status transformation. |
+| Measurement | A qubit and a classical output bit | Samples the quantum register in the computational basis | It produces classical bits for printing. It does not update the board. |
 
-The source `(0,0)` encodes as `0000`. It contains no 1-bits, so the initializer applies no X gates to `cur`. Its state stays:
+All gates in this 23-qubit circuit are X, CX, CCX, or MCX; there is no Hadamard gate. The input is a basis state and these gates map basis states to basis states. The ideal direct statevector simulation therefore gives a definite basis result; this measurement is not evidence of amplitude amplification.
 
-```text
-cur = |0000⟩
-```
+## 4. Read the final measurement
 
-### Stage B: prepare the target coordinate
-
-The target `(1,0)` encodes as `0001`. The initializer applies `X(tgt[0])`:
-
-```text
-tgt[0]: |0⟩ --X--> |1⟩
-tgt[1], tgt[2], tgt[3]: remain |0⟩
-tgt = |0001⟩    (logical string)
-```
-
-The X gate is the NOT operation: `X|0⟩=|1⟩` and `X|1⟩=|0⟩`. It prepares a basis value here; it does not create a superposition.
-
-At this point the coordinate portion is the product state `|0000⟩cur |0001⟩tgt`. There is no quantum uncertainty over which move was chosen: the move has already been selected as classical data.
-
-### Stage C: extract the source-square status
-
-`_add_status_extractor` loops over all four board squares using the classical Python board. It skips empty squares. The only occupied square is `(0,0)`, with coordinate `0000` and status `001`.
-
-The lookup must activate only when the coordinate register matches `0000`. The MCX gate is controlled on 1s, so the builder converts each expected zero control into a one temporarily:
-
-1. Apply X to all four `cur` qubits: `0000 → 1111`.
-2. Apply the four-controlled X from the coordinate qubits to `src[0]`, because the last status bit of `001` is 1. Since all four controls are 1, `src[0]` flips: `0 → 1`.
-3. Apply X to all four `cur` qubits again: `1111 → 0000`.
-
-The two sets of X gates restore the coordinate register. This is called uncomputing the temporary control pattern. The status result remains:
-
-```text
-cur = |0000⟩
-src = |001⟩    (logical string; src[0] is 1)
-```
-
-The lookup is encoded in gates, but its contents came from the classical board. The circuit did not search through a quantum-encoded board.
-
-### Stage D: extract the target-square status
-
-The destination lookup again considers the occupied source square `(0,0)` with coordinate `0000`. It temporarily applies X to all four target qubits, using the `tgt` register as the MCX controls. Since `tgt` is `0001`, this makes the temporary control pattern `1110`, not `1111`. At least one control is zero, so the four-controlled X does not fire. The X gates are undone and `tgt` returns to `0001`.
-
-There are no other occupied squares. Consequently, the destination status stays:
-
-```text
-tgt = |0001⟩
-dst = |000⟩    (empty square)
-```
-
-### Stage E: attempt to compute the move direction
-
-The code divides each four-qubit coordinate register into two two-qubit slices:
-
-```python
-cur_x = cur[0:2]
-cur_y = cur[2:4]
-tgt_x = tgt[0:2]
-tgt_y = tgt[2:4]
-```
-
-Because Qiskit's low-index qubits hold the rightmost logical bits, `cur[0:2]` and `tgt[0:2]` contain the **row** bits in this encoding; `cur[2:4]` and `tgt[2:4]` contain the **column** bits. The variable names `x` and `y` can therefore be confusing when read alongside the logical strings.
-
-The first block attempts an equality check on the first slices. For each bit it applies CX from `cur_x[i]` to `tgt_x[i]`, then X to `tgt_x[i]`. Algebraically, the target bit becomes `NOT(cur_x[i] XOR tgt_x[i])`, which equals 1 when the input bits matched. The MCX into `anc[0]` fires only if both bits matched.
-
-For this move, the first slices are the row values:
-
-```text
-cur_x (row 0) = 00
-tgt_x (row 1) = 01
-```
-
-They do not match. In qubit-index order the row bits are `cur_x=[0,0]` and `tgt_x=[1,0]`; after the CX/X pattern the temporary target controls are `[0,1]`. The MCX therefore does not fire, and `anc[0]` stays 0. The following gates restore the target bits.
-
-The code then copies `anc[0]` into `dir[0]` and `dir[1]` using CX gates. Since `anc[0]=0`, neither direction bit changes. The subsequent two CCX patterns attempt limited diagonal detection; with this input their controls are not both 1, so `anc[1]`, `anc[2]`, and the direction bits remain 0. No direction flag is set for the forward move.
-
-This is a limitation of the current implementation: the first check is testing equality on the row slice, while a forward pawn move requires equal columns and a one-row displacement. The code does not implement the needed complete row-increment/equality predicate. The source code also explicitly leaves full knight displacement logic for future work.
-
-### Stage F: run the status-operator pattern
-
-The method named `_add_status_operator` is not a complete move or board-update circuit. For this example, it behaves as follows:
-
-1. Apply X to all three `dst` bits. The empty destination changes temporarily from `000` to `111`.
-2. Use all four `dir` bits and all three `dst` bits as controls. A later MCX also uses one source-status bit as a control.
-3. Apply the MCX, a CX from `anc[0]` to a destination bit, and another MCX intended to clear the temporary ancilla result.
-4. Apply X to all three destination bits again, undoing the temporary complement.
-
-An MCX flips its target if and only if **every** control qubit is 1. Here every direction bit is 0, so the direction controls are not satisfied. The MCX gates do not fire; `anc[0]` and `dst` do not change during this stage. The final X gates restore `dst` from `111` to `000`.
-
-Thus this example's logical data registers at the end of the unitary-gate portion are:
-
-| Register | Logical value after the implemented gates | Meaning in this example |
-|---|---|---|
-| `cur` | `0000` | Source `(0,0)` |
-| `tgt` | `0001` | Destination `(1,0)` |
-| `dir` | `0000` | No direction flag was detected |
-| `src` | `001` | Black Pawn status was looked up |
-| `dst` | `000` | Destination remains encoded as empty |
-| `anc` | `00000` | Scratch qubits end at zero for this input |
-
-This output does **not** encode a completed pawn move: the source is still marked as occupied in `src`, the target still reads empty in `dst`, and there is no board register to update.
-
-## 5. What each gate does, and why this circuit uses it
-
-The exact gate letters and their effect on computational-basis bits are:
-
-| Gate | Basis-state action | Why it appears here |
-|---|---|---|
-| X | `|0⟩ ↔ |1⟩` on its target | Loads coordinate 1-bits; temporarily converts zero-valued controls to 1s so an MCX can test an exact bit pattern; complements target status bits inside the status-operator attempt. |
-| CX | `(control, target) → (control, target XOR control)` | Copies/toggles a bit conditionally in the direction logic. If the control is 0, the target stays the same; if it is 1, the target flips. |
-| CCX | `(a,b,target) → (a,b,target XOR (a AND b))` | Toffoli gate used by the limited diagonal-pattern checks. It flips the target only when both controls are 1. |
-| MCX | Flips its target iff every control equals 1 | Implements exact coordinate lookup and multi-condition patterns. A four-control example flips `src[0]` only when all four coordinate controls match the prepared pattern. |
-| Measurement | Reads a qubit in the computational basis and records 0 or 1 | Produces the printed classical bit string. It does not itself move a piece or update `GameState`. |
-
-All these gates are reversible. X is its own inverse; CX, CCX, and MCX are also their own inverses. That lets the code undo temporary control flips and keep the coordinate inputs intact while writing a status bit. A circuit with only these gates and basis-state inputs produces a basis-state output; that is why the noiseless statevector simulation with one shot gives a deterministic-looking bit string. This does not mean the circuit has found a move by quantum search.
-
-The `PureQuantumCircuitBuilder` code for this example does not append H gates. Hadamard gates are relevant to a nontrivial Grover search, but no such search circuit is built by the current default option 7.
-
-## 6. Measurement and the printed bit string
-
-The builder measures every quantum register in order into classical bits `meas[0]` through `meas[22]`. In that mapping, each register's `q[0]` is sent to the next classical bit. Qiskit displays a measurement key with the highest-index classical bit on the left, so the printed 23-character string is not simply the register list written left-to-right. Read it by accounting for that reversal and the within-register bit ordering.
-
-For this default input, the logical post-gate values are the register table above. The measured string is a readout of those circuit registers (subject to simulator behavior); it is not a new chess position and is not decoded back into a board. Option 7 prints the measurement and saves `architecture_2x2.png`; it does not apply the move to a persistent game.
-
-With the current register-to-classical-bit wiring and noiseless statevector simulator, those values are displayed in Qiskit's reversed classical-bit order as:
+The builder measures all 23 qubits. Qiskit displays the highest-index classical bit on the left, so the printed string reads in reverse register order. The expected one-shot key for this input is:
 
 ```text
 00000 000 001 0000 0001 0000
  anc   dst src  dir  tgt  cur
 ```
 
-Without spaces, the 23-bit measurement key is `00000000001000000010000`. Grouping it by the labels above makes the register values easier to read than treating the full string as a board encoding.
+Without spaces: `00000000001000000010000`. These groups report scratch bits, destination status, source status, direction, target coordinate, and source coordinate. This is a measured circuit record, not a four-square board encoding. Option 7 reports it and saves the diagram; it does not call `Game.make_move` to update a persistent board.
 
-## 7. What Grover would do in a different, nontrivial search
+## 5. The separate Grover circuit: from a move list to an index
 
-This section describes the Grover gates present in the general implementation, to distinguish them from what happens in the default 2×2 route. Suppose an application supplied at least two candidate moves and marked only some of their integer indices. `GroverSearch` would then construct a separate, small circuit with a move-index register, one flag qubit, and classical measurement bits.
+Grover's search in this repository is a hybrid pipeline. It searches numbers that refer to list positions; it does not encode an entire chess position.
 
-### 7.1 Prepare an equal superposition with H
+### Phase 1 - Python prepares candidates and targets
 
-For one index qubit, H acts as:
+In `QuantumMoveSearcher`, `MoveGenerator.generate_legal_moves(state)` creates the legal `Move` objects as an ordered Python list. `HeuristicEvaluator.score_move` scores each move classically. The code finds the maximum score and passes the list positions with that score as `optimal_indices` to `GroverSearch`.
 
-```text
-H|0⟩ = (|0⟩ + |1⟩)/√2
-H|1⟩ = (|0⟩ - |1⟩)/√2
-```
+A representative 3×3 list is:
 
-Starting at `|0⟩`, H creates equal amplitudes for candidate indices 0 and 1. With more index qubits, H on each creates equal amplitudes over all `2^n` bit strings. This is useful only if there are multiple alternatives to search; one candidate needs no amplitude amplification.
+| Index | Legal move | Classical score |
+|---:|---|---:|
+| 0 | Knight `(2,1) -> (0,0)`, capturing a Black Pawn | 13.3 |
+| 1 | Knight `(2,1) -> (0,2)` | 4.4 |
 
-### 7.2 Prepare the phase-kickback flag
+Here Python passes target list `[0]`. The score is not computed by the quantum circuit. If there are `L` candidates, the index register uses `n=ceil(log₂ L)` qubits (at least one) and represents `N=2ⁿ` bit patterns. If `L` is not a power of two, the extra patterns are padding and have no move.
 
-The Grover builder also starts a flag at `|0⟩`, then applies X followed by H:
+Important route detail: `GroverSearch.search(state)` by itself gets legal candidates and, by default, marks every one of them legal. If every candidate is a target, it returns early and builds no Grover circuit. The hybrid scorer passes a strict subset of best-scoring indices when there is a distinct best move, which is the case that can exercise the Grover circuit. Option 7's one-move 2×2 run returns early for this reason.
 
-```text
-|0⟩ --X--> |1⟩ --H--> |−⟩ = (|0⟩ - |1⟩)/√2
-```
+### Phase 2 - H gates create candidate superposition; X and H prepare the flag
 
-If an oracle-controlled X flips this flag, `X|−⟩ = -|−⟩`. The flag returns to the same observable state, while the associated move-index amplitude acquires a minus sign. This is phase kickback.
-
-### 7.3 Mark an index with the oracle
-
-For each marked integer index, the oracle converts zero-valued index bits to 1 temporarily using X gates, applies an MCX controlled by the full index register to the flag, then undoes the X gates. That MCX fires only for the selected index. Because the flag is `|−⟩`, the selected index's amplitude changes sign:
+For two candidate moves, one move-index qubit starts in `|0⟩`. The Hadamard gate makes:
 
 ```text
-unmarked index amplitude: +a
-marked index amplitude:   -a
+H|0⟩ = (|0⟩ + |1⟩) / √2
 ```
 
-The oracle in this repository does not calculate chess rules on a superposition. Python supplies the target indices to it before the circuit is built.
-
-### 7.4 Amplify with the diffuser
-
-The diffuser performs the reflection-about-the-mean operation. In `quantum/diffuser.py`, its gate sequence is H on every index qubit, X on every index qubit, a multi-controlled Z construction, then X and H again. With exactly one index qubit, the code uses a Z gate for the central step. With more qubits, it constructs the controlled-Z operation using H–MCX–H on the final qubit.
-
-The phase oracle alone does not change measurement probabilities because `|a|² = |-a|²`. The diffuser lets amplitudes interfere so marked states can grow in probability. An appropriate number of oracle/diffuser rounds is important; too many rounds can reduce the success probability again.
-
-### 7.5 Measure and decode
-
-Measurement returns an index bit string. Classical Python parses it as an integer and uses that integer to select an element of the original `candidates` list. It checks that the index is in range and among the marked targets, with a fallback to the first target if needed.
-
-Again, none of these Grover steps occur in the present 2×2 default path because that path has one candidate and returns early.
-
-## 8. Why the present result is not a quantum board transition
-
-The 23-qubit circuit has registers for one source coordinate, one target coordinate, a direction workspace, two compact status values, and scratch space. It has no register holding all four squares as a mutable board. It also has no implemented reversible operation that clears the source square, writes a piece into the destination, updates turn/history, or applies all chess rules.
-
-The actual game transition belongs to classical code. In interactive option 6, after the circuit is measured, `PureQuantumGame2x2.make_move` calls its parent `Game.make_move(move)`. Option 7 does not make that call; it reports a selected move and a circuit measurement, then exits the demonstration.
-
-The measured output should therefore be described as a **diagnostic measurement of a coordinate/status gate prototype**. The move list and move selection in option 7 are classical in this default example, and the board is not changed by the 23-qubit circuit.
-
-## 9. Summary: actual default 2×2 execution
+Now both list positions are represented in the index register. The flag qubit starts at `|0⟩`; X then H gives:
 
 ```text
-Classical board setup
-    Black Pawn at (0,0); other three squares empty
-        ↓
-Classical legal move generation
-    One candidate: (0,0) → (1,0)
-        ↓
-GroverSearch early return
-    Returns the only candidate; no Grover circuit or index measurement
-        ↓
-23-qubit coordinate/status circuit
-    cur=0000, tgt=0001; lookup src=001 and dst=000
-    limited direction logic leaves dir=0000 for this move
-    status operator does not change the empty dst encoding
-        ↓
-One-shot measurement and circuit diagram
-    Diagnostic bit string; no board update in option 7
+|0⟩ --X--> |1⟩ --H--> |−⟩ = (|0⟩ - |1⟩) / √2
 ```
 
-That description matches the current code. To turn this into an actual Grover example, the program would need multiple candidates and a proper target-selection rule that marks a strict subset. To turn the small circuit into a move executor, it would need corrected reversible direction predicates, a complete board-state encoding, a validated reversible state transition, and code that decodes/uses the circuit result. Those are separate engineering tasks; the current demo should not claim they are already implemented.
+The flag is prepared this way so a controlled-X flips its phase while returning the flag to `|−⟩`.
 
-## 10. Source files to follow along
+### Phase 3 - The oracle marks a target index by phase kickback
 
-- `config.py` — default 2×2 Black Pawn layout.
-- `main.py` — option 6 and option 7 control flow.
-- `engine/move_generator.py` — classical pawn move generation.
-- `engine/move.py` — coordinate displacement and direction labels.
-- `quantum/grover.py` — Grover early-return condition, general circuit, measurement, and index decoding.
-- `quantum/oracle.py` — candidate generation and index-pattern oracle.
-- `quantum/diffuser.py` — general Grover diffuser gates.
-- `quantum/encoder.py` — coordinate/status bit encodings and register initialization.
-- `pure_quantum_engine/registers.py` — the 23-qubit small-board register allocation.
-- `pure_quantum_engine/circuit.py` — status lookup, direction pattern, status operator, and measurement wiring.
+For target index 0, the index bit is zero. The oracle applies X to that index qubit temporarily, so its controls become all 1; an MCX controlled by the index register targets the flag; then X restores the index. Since `X|−⟩=-|−⟩`, the flag flip changes the amplitude sign associated with the matched move index. The index register itself is restored:
+
+```text
+unmarked index: amplitude +a       marked index: amplitude -a
+```
+
+Python supplies the target index. The oracle does not run the move rules or score the board in superposition. The phase flip alone does not change measurement probabilities because `|a|²=|-a|²`.
+
+### Phase 4 - The diffuser converts the phase mark into probability change
+
+The diffuser acts on the move-index register, not on the 23-qubit coordinate/status registers. Its circuit sequence is:
+
+```text
+H on index qubits
+X on index qubits
+central multi-controlled Z
+X on index qubits
+H on index qubits
+```
+
+For one index qubit, the central gate is Z. For more than one, Qiskit builds a multi-controlled Z using H on the last qubit, MCX, then H on the last qubit. The full operation reflects amplitudes about their average:
+
+```text
+aᵢ' = 2ā - aᵢ
+```
+
+where `ā` is the mean amplitude. The oracle first makes target amplitudes negative; the reflection can then raise them and reduce unmarked amplitudes. Repeating oracle + diffuser rotates probability toward the marked set. Too many rounds can rotate past the best point, so the iteration count matters. The diffuser is needed because the oracle's sign change by itself leaves probabilities unchanged.
+
+### A four-index example where amplification is clear
+
+With four candidate indices and one target `00`, two H gates prepare equal amplitudes of `1/2` and probabilities of `1/4`:
+
+```text
+Before oracle: (+|00⟩ + |01⟩ + |10⟩ + |11⟩) / 2
+After oracle:  (-|00⟩ + |01⟩ + |10⟩ + |11⟩) / 2
+```
+
+The mean amplitude after the oracle is `ā=1/4`. The diffuser gives target amplitude `2(1/4)-(-1/2)=1`; each unmarked amplitude becomes `2(1/4)-(1/2)=0`. Thus the ideal one-iteration example measures `00` with probability 1. Here `N=4`, `M=1`, and `floor((π/4)√(N/M))=1` iteration.
+
+The code's documented two-candidate example is different: with `N=2`, `M=1`, the target begins at probability `1/2` and one Grover iteration leaves it at `1/2`. The program can still return a target because it checks the measured index and falls back to the first target. Explain the sampled probability and the classical fallback separately.
+
+### Phase 5 - Measure and map the integer back to a move
+
+The Grover circuit measures only the move-index register; it does not measure the flag. Classical code reads the bit string as an integer, checks that it is in range and in `optimal_indices`, and returns `candidates[index]`. If the sample is not a usable target, it returns the first target as a fallback. The console label “Prob Amplitude” is a measured frequency, not a quantum amplitude.
+
+## 6. Terms your faculty may ask about
+
+| Term | Meaning in this project |
+|---|---|
+| **Qubit / register** | Simulated two-state unit / named group of qubits, such as `tgt` or the Grover `move` index. |
+| **Amplitude / probability** | Complex state coefficient / squared magnitude of that coefficient. A sign flip alone does not alter probability. |
+| **Oracle / marked index** | Reversible circuit that phase-flips index values supplied by Python / one such selected list position. |
+| **Diffuser / Grover iteration** | Reflection about the mean / one oracle followed by one diffuser. |
+| **Shot** | One circuit execution ending in measurement. More shots estimate outcome frequencies. |
+| **Noise / gate error rate** | A simulator model for imperfect gates. `QUANTUM_NOISE_PROB=0.01` is a configured single-qubit depolarizing parameter; the wrapper uses 10 times this for selected two-qubit gates. It is a setting, not a measured hardware rate. |
+| **AerSimulator / statevector** | Local Qiskit software simulation / a simulation method that evolves amplitudes. The direct 2×2 route uses one shot and supplies no noise model. |
+| **Shared simulator wrapper** | `QuantumSimulator` centralizes Aer execution, transpilation, shots, and optional noise. Its defaults are 1024 shots and configured noise enabled; option 7's diagnostic circuit runs Aer directly instead. |
+| **Minimax** | Separate classical game-tree search: select a move assuming the opponent chooses responses that minimize the evaluation. Alpha-beta pruning skips branches that cannot affect that decision. |
+
+## Faculty closing explanation
+
+“The picture shows a reversible coordinate/status circuit. Blue X gates load bits or temporarily complement controls; connected control dots and X targets implement conditional flips. The source lookup writes `src=001`, the target lookup leaves `dst=000`, but the direction comparison outputs `dir=0000` for this example. Because the later status MCX gates require all direction controls to be 1, they do not fire. Measurement reports the registers; it does not execute a chess move. Separately, the hybrid Grover search takes Python's legal-move list and classically selected best indices, makes a superposition of those indices, marks targets by phase kickback, and uses the diffuser to alter their measurement probabilities. Python finally maps and validates the measured index.”
