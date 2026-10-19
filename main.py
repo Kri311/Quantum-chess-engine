@@ -19,7 +19,11 @@ from qiskit_aer import AerSimulator
 PROJECT_ROOT = Path(__file__).resolve().parent
 DIAGRAM_DIR = PROJECT_ROOT / "docs" / "assets" / "diagrams"
 
-# --- Option 3/4: Circuit Generators ---
+# ---------------------------------------------------------------------------
+# Circuit construction and diagram generation
+# ---------------------------------------------------------------------------
+# Build a representative board, create its quantum circuit, and optionally
+# simulate and save a diagram for the selected board size.
 
 def generate_circuit_diagram(board_size: int, is_pure: bool) -> None:
     """Generates the architectural diagram for the selected board size."""
@@ -113,7 +117,11 @@ def generate_circuit_diagram(board_size: int, is_pure: bool) -> None:
     input("\nPress Enter to return to main menu...")
 
 
-# --- Option 2: 3x3 Pure Quantum Game Wrapper ---
+# ---------------------------------------------------------------------------
+# Interactive game modes
+# ---------------------------------------------------------------------------
+# The wrappers below connect the shared engine and GUI to the 3×3 pure,
+# 8×8 hybrid, and 2×2 demonstration configurations.
 
 def play_3x3_pure_quantum() -> None:
     """Runs the 3x3 game overriding normal moves with Pure Quantum tracking."""
@@ -230,7 +238,11 @@ def play_2x2_pure_quantum() -> None:
     gui.run()
 
 
-# --- Option 7: 2x2 Grover Search + Pure Quantum Execution ---
+# ---------------------------------------------------------------------------
+# Autonomous 2×2 Grover demonstration
+# ---------------------------------------------------------------------------
+# Find a candidate move with Grover, execute the transition circuit, and
+# print the measured result and circuit resource summary.
 
 def run_2x2_grover_demo() -> None:
     """Runs a 2x2 autonomous demo using Grover's search and Pure Quantum state execution."""
@@ -304,7 +316,11 @@ def run_2x2_grover_demo() -> None:
     input("\nPress Enter to return to main menu...")
 
 
-# --- Main Menu ---
+# ---------------------------------------------------------------------------
+# Interactive menu and dispatch
+# ---------------------------------------------------------------------------
+# Keep user-facing option text and the corresponding mode dispatch together
+# so new demonstrations can be added in one place.
 
 def main() -> None:
     while True:

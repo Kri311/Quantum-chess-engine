@@ -14,6 +14,11 @@ from dataclasses import dataclass
 from engine.constants import Color, PieceType
 
 
+# ---------------------------------------------------------------------------
+# Display labels
+# ---------------------------------------------------------------------------
+# Unicode chess glyphs are preferred, with a colour-only ASCII fallback for
+# terminals or fonts that cannot display those symbols.
 # Unicode symbols keyed by (Color, PieceType).
 _SYMBOLS: dict[tuple[Color, PieceType], str] = {
     (Color.WHITE, PieceType.PAWN): "♙",
@@ -37,6 +42,11 @@ _ASCII_LABELS: dict[Color, str] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Immutable piece value object
+# ---------------------------------------------------------------------------
+# The model stores only colour and type; rendering labels are derived from
+# those values instead of being duplicated in the game state.
 @dataclass(frozen=True, slots=True)
 class Piece:
     """Immutable chess piece.

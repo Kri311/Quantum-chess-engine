@@ -36,6 +36,11 @@ def create_initial_pieces(
 
     pieces: dict[Position, Piece] = {}
 
+    # ------------------------------------------------------------------
+    # Board-specific starting layouts
+    # ------------------------------------------------------------------
+    # Small research boards use editable config tuples; other board sizes
+    # receive a generated pawn row and the available back-rank pieces.
     if size == 3:
         # Read layout from the global config — edit config.INITIAL_PIECES_3x3
         # to change positions, add pieces, or remove pieces.

@@ -43,6 +43,11 @@ class HybridEngine:
         self.minimax = MinimaxEngine(max_depth=3)
         self.quantum_searcher = QuantumMoveSearcher()
 
+    # ------------------------------------------------------------------
+    # Move-selection pipeline
+    # ------------------------------------------------------------------
+    # Handle trivial positions first, then try Grover when enabled, and use
+    # minimax as the reliable classical fallback.
     def select_move(self, state: GameState) -> Move | None:
         """Select the best move using the hybrid pipeline.
 
@@ -75,6 +80,11 @@ class HybridEngine:
         # Classical fallback.
         return self.minimax.search(state)
 
+    # ------------------------------------------------------------------
+    # Console game driver
+    # ------------------------------------------------------------------
+    # This convenience loop repeatedly asks the selector for a move and
+    # reports the final winner or draw; the GUI uses the selection API above.
     def play_game(self, game: Game) -> None:
         """Play a complete game using the hybrid engine for both sides.
 

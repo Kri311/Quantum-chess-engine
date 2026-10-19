@@ -11,6 +11,11 @@ from __future__ import annotations
 class MeasurementProcessor:
     """Processes raw measurement counts from quantum circuit execution."""
 
+    # ------------------------------------------------------------------
+    # Normalize and rank outcomes
+    # ------------------------------------------------------------------
+    # Convert shot counts into probabilities or return the highest-weight
+    # results for display and downstream selection.
     @staticmethod
     def process_counts(counts: dict[str, int]) -> dict[str, float]:
         """Normalise raw counts to probabilities.
@@ -62,6 +67,11 @@ class MeasurementProcessor:
         sorted_items = sorted(counts.items(), key=lambda x: x[1], reverse=True)
         return [(bs, count / total) for bs, count in sorted_items[:k]]
 
+    # ------------------------------------------------------------------
+    # Validate and characterize the distribution
+    # ------------------------------------------------------------------
+    # These helpers check register-width assumptions and summarize how
+    # concentrated the measured outcomes are.
     @staticmethod
     def validate_measurement(
         result: str, expected_length: int

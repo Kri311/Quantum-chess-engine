@@ -21,6 +21,11 @@ class Classical3x3Engine:
     the same per-move heuristic scores.
     """
 
+    # ------------------------------------------------------------------
+    # Configuration and board-size guard
+    # ------------------------------------------------------------------
+    # Keep this wrapper specific to the 3×3 benchmark so comparisons use
+    # the same rules while clearly rejecting unsupported board sizes.
     def __init__(self, max_depth: int = 3) -> None:
         if max_depth < 1:
             raise ValueError("max_depth must be at least 1")
@@ -34,6 +39,11 @@ class Classical3x3Engine:
                 f"Classical3x3Engine requires a 3x3 board, got {state.board.size}x{state.board.size}"
             )
 
+    # ------------------------------------------------------------------
+    # Move selection strategies
+    # ------------------------------------------------------------------
+    # The search method is the primary player; the greedy method is a
+    # one-ply baseline that scores only the current legal moves.
     def select_move(self, state: GameState) -> Move | None:
         """Select a move with depth-limited classical minimax."""
         self._check_board(state)
@@ -47,6 +57,11 @@ class Classical3x3Engine:
             return None
         return max(moves, key=lambda move: HeuristicEvaluator.score_move(state, move))
 
+    # ------------------------------------------------------------------
+    # Per-action reference values
+    # ------------------------------------------------------------------
+    # Evaluate every root move independently for reports that compare move
+    # quality rather than just the single move selected by the engine.
     def action_values(self, state: GameState) -> dict[Move, float]:
         """Return each legal move's minimax value from the mover's perspective.
 

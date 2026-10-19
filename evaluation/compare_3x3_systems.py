@@ -63,6 +63,11 @@ SYSTEM_ORDER = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Reproducible benchmark positions
+# ---------------------------------------------------------------------------
+# Build fixed-size board states and seeded legal walks so every system is
+# evaluated on the same collection of distinct decision positions.
 def _state_from_layout(
     layout: list[tuple[int, int, Color, PieceType]],
     turn: Color,
@@ -163,6 +168,11 @@ def _state_key(state: GameState) -> tuple:
     return state.current_turn.name, pieces
 
 
+# ---------------------------------------------------------------------------
+# Measurement records and resource sampling
+# ---------------------------------------------------------------------------
+# Store each run in a common row shape and sample process memory while an
+# action runs, so the three implementations can be summarized consistently.
 def _measurement_row(
     *,
     state_id: int,
@@ -217,6 +227,11 @@ def _measure(action) -> tuple[float, float]:
     return elapsed_ms, additional_peak_rss / (1024 * 1024)
 
 
+# ---------------------------------------------------------------------------
+# Per-system circuit and move evaluation
+# ---------------------------------------------------------------------------
+# Run the classical selector, the fixed-move pure circuit, and the Grover
+# candidate search against each shared position and record their costs.
 def evaluate_positions(
     positions: list[GameState],
     *,
@@ -333,6 +348,11 @@ def evaluate_positions(
     return rows
 
 
+# ---------------------------------------------------------------------------
+# Aggregate and export benchmark results
+# ---------------------------------------------------------------------------
+# Collapse per-position measurements into system averages, then write the
+# tabular, graphical, and explanatory report artifacts.
 def summarize(rows: list[dict[str, object]]) -> list[dict[str, object]]:
     summaries: list[dict[str, object]] = []
     for system in SYSTEM_ORDER:
@@ -502,6 +522,11 @@ def write_summary_report(
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+# ---------------------------------------------------------------------------
+# Benchmark orchestration and command-line entry point
+# ---------------------------------------------------------------------------
+# This layer wires together position creation, evaluation, and output paths;
+# the lower-level helpers above can also be called independently.
 def run_comparison(
     *,
     position_count: int = POSITION_COUNT,

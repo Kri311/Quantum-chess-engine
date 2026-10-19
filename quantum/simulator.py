@@ -24,6 +24,11 @@ _AER_BASIS_GATES: list[str] = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Backend setup and optional noise
+# ---------------------------------------------------------------------------
+# Configure Aer once per wrapper instance; execution methods below handle
+# transpilation, GPU fallback, and conversion of results to simple mappings.
 class QuantumSimulator:
     """Wrapper around Qiskit Aer for executing quantum circuits.
 
@@ -96,6 +101,11 @@ class QuantumSimulator:
         
         return noise_model
 
+    # ------------------------------------------------------------------
+    # Measurement and statevector execution
+    # ------------------------------------------------------------------
+    # `run` returns sampled counts, while `run_statevector` removes terminal
+    # measurements and exposes the non-zero basis-state amplitudes.
     def run(
         self,
         circuit: QuantumCircuit,

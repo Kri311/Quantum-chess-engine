@@ -12,5 +12,10 @@ if str(PROJECT_ROOT) not in sys.path:
 from evaluation.compare_3x3_systems import main
 
 
+# ---------------------------------------------------------------------------
+# Compatibility entry point
+# ---------------------------------------------------------------------------
+# Preserve the old command path while routing execution through the current
+# reproducible comparison implementation.
 if __name__ == "__main__":
     main()

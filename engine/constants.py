@@ -8,6 +8,10 @@ no module contains magic numbers or hard-coded strings.
 from enum import Enum, auto
 
 
+# ---------------------------------------------------------------------------
+# Piece ownership and identity
+# ---------------------------------------------------------------------------
+# These enums are shared across board state, rules, display, and encoding.
 class Color(Enum):
     """Side / player colour."""
 
@@ -26,6 +30,11 @@ class Color(Enum):
         return self.name
 
 
+# ---------------------------------------------------------------------------
+# Piece kinds and move directions
+# ---------------------------------------------------------------------------
+# PieceType describes what occupies a square; Direction describes how a
+# candidate move changes squares and is consumed by the quantum oracle.
 class PieceType(Enum):
     """Chess piece type.
 

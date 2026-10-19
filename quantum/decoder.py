@@ -20,6 +20,11 @@ from quantum.encoder import BoardEncoder
 class BoardDecoder:
     """Decodes quantum measurement results into classical chess state."""
 
+    # ------------------------------------------------------------------
+    # Decode individual encoded values
+    # ------------------------------------------------------------------
+    # These helpers delegate coordinate and piece-status formats to the
+    # encoder so both sides of the conversion stay consistent.
     @staticmethod
     def decode_position(bitstring: str, board_size: int | None = None) -> Position:
         """Decode a coordinate bitstring to a Position.
@@ -45,6 +50,11 @@ class BoardDecoder:
         """
         return BoardEncoder.decode_status_bitstring(bitstring)
 
+    # ------------------------------------------------------------------
+    # Decode composite measurement results
+    # ------------------------------------------------------------------
+    # Parse register fields first, then use them to recover a move index or
+    # rebuild the small board state represented by a measurement.
     @staticmethod
     def decode_measurement(
         bitstring: str, board_size: int | None = None,
